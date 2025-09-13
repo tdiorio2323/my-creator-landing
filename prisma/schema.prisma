@@ -1,0 +1,222 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String?  @unique
+  fullName  String?
+  avatarUrl String?
+  role      Role     @default(SUBSCRIBER)
+  bio       String?
+  location  String?
+  website   String?
+  dateOfBirth DateTime?
+  newsletterSubscribed Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  creator       Creator?
+  subscriptions Subscription[]
+  payments      Payment[]
+  interactions  ContentInteraction[]
+  sentMessages  Message[] @relation("MessageSender")
+  receivedMessages Message[] @relation("MessageRecipient")
+
+  @@map("users")
+}
+
+model Creator {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  displayName     String
+  category        String?
+  bannerUrl       String?
+  description     String?
+  isVerified      Boolean @default(false)
+  subscriberCount Int     @default(0)
+  totalEarnings   Decimal @default(0)
+  stripeAccountId String?
+
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tiers         SubscriptionTier[]
+  subscriptions Subscription[]
+  content       Content[]
+  payments      Payment[]
+  analytics     CreatorAnalytics[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("creators")
+}
+
+model SubscriptionTier {
+  id          String    @id @default(cuid())
+  creatorId   String
+  name        String
+  description String?
+  price       Decimal
+  tierType    TierType
+  features    Json?
+  stripePriceId String?
+  isActive    Boolean   @default(true)
+
+  creator       Creator        @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  subscriptions Subscription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("subscription_tiers")
+}
+
+model Subscription {
+  id                   String            @id @default(cuid())
+  subscriberId         String
+  creatorId            String
+  tierId               String?
+  status               SubscriptionStatus @default(ACTIVE)
+  stripeSubscriptionId String?           @unique
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+
+  subscriber User              @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  creator    Creator           @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  tier       SubscriptionTier? @relation(fields: [tierId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([subscriberId, creatorId])
+  @@map("subscriptions")
+}
+
+model Content {
+  id             String      @id @default(cuid())
+  creatorId      String
+  title          String
+  description    String?
+  contentType    ContentType
+  mediaUrl       String?
+  thumbnailUrl   String?
+  duration       Int?
+  requiredTier   TierType    @default(BASIC)
+  isFree         Boolean     @default(false)
+  price          Decimal?
+  viewCount      Int         @default(0)
+  likeCount      Int         @default(0)
+  commentCount   Int         @default(0)
+  isLive         Boolean     @default(false)
+  scheduledAt    DateTime?
+  publishedAt    DateTime?
+
+  creator      Creator              @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  interactions ContentInteraction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("content")
+}
+
+model ContentInteraction {
+  id              String @id @default(cuid())
+  userId          String
+  contentId       String
+  interactionType String
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, contentId, interactionType])
+  @@map("content_interactions")
+}
+
+model Message {
+  id          String  @id @default(cuid())
+  senderId    String
+  recipientId String
+  content     String
+  isRead      Boolean @default(false)
+
+  sender    User @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient User @relation("MessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("messages")
+}
+
+model Payment {
+  id                    String @id @default(cuid())
+  payerId               String
+  creatorId             String
+  amount                Decimal
+  currency              String @default("usd")
+  paymentType           String
+  stripePaymentIntentId String? @unique
+  status                String @default("pending")
+  metadata              Json?
+
+  payer   User    @relation(fields: [payerId], references: [id], onDelete: Cascade)
+  creator Creator @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@map("payments")
+}
+
+model CreatorAnalytics {
+  id             String  @id @default(cuid())
+  creatorId      String
+  date           DateTime @db.Date
+  totalViews     Int     @default(0)
+  totalLikes     Int     @default(0)
+  newSubscribers Int     @default(0)
+  revenue        Decimal @default(0)
+
+  creator Creator @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([creatorId, date])
+  @@map("creator_analytics")
+}
+
+enum Role {
+  SUBSCRIBER
+  CREATOR
+  ADMIN
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  PAST_DUE
+  UNPAID
+}
+
+enum ContentType {
+  VIDEO
+  PHOTO
+  TEXT
+  LIVE
+}
+
+enum TierType {
+  BASIC
+  PREMIUM
+  VIP
+}

@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { doesSessionExist, signOut as stSignOut } from 'supertokens-auth-react/recipe/emailpassword'
+import Session from 'supertokens-auth-react/recipe/session'
 
 const AuthContext = createContext({})
 
@@ -17,99 +18,44 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session
-    const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setSession(session)
-      setUser(session?.user || null)
-      setLoading(false)
-    }
+    const checkSession = async () => {
+      try {
+        if (await doesSessionExist()) {
+          const sessionInfo = await Session.getAccessTokenPayloadSecurely()
+          setSession(sessionInfo)
 
-    getInitialSession()
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session)
-        setUser(session?.user || null)
-        setLoading(false)
-
-        // Handle different auth events
-        if (event === 'SIGNED_IN') {
-          console.log('User signed in:', session.user)
-        } else if (event === 'SIGNED_OUT') {
-          console.log('User signed out')
-          setUser(null)
-          setSession(null)
-        }
-      }
-    )
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [])
-
-  // Sign up
-  const signUp = async (email, password, userData = {}) => {
-    try {
-      setLoading(true)
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            ...userData,
-            email_confirm: false
+          // Fetch user from our API
+          const response = await fetch('/api/user/me')
+          if (response.ok) {
+            const userData = await response.json()
+            setUser(userData)
           }
         }
-      })
-
-      if (error) throw error
-      return { data, error: null }
-    } catch (error) {
-      return { data: null, error: error.message }
-    } finally {
-      setLoading(false)
+      } catch (error) {
+        console.error('Session check failed:', error)
+      } finally {
+        setLoading(false)
+      }
     }
-  }
 
-  // Sign in
-  const signIn = async (email, password) => {
-    try {
-      setLoading(true)
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      })
+    checkSession()
 
-      if (error) throw error
-      return { data, error: null }
-    } catch (error) {
-      return { data: null, error: error.message }
-    } finally {
-      setLoading(false)
+    // Listen for session changes
+    const unsubscribe = Session.addAxiosInterceptors()
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe()
+      }
     }
-  }
+  }, [])
 
   // Sign out
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
-      return { error: null }
-    } catch (error) {
-      return { error: error.message }
-    }
-  }
-
-  // Reset password
-  const resetPassword = async (email) => {
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`
-      })
-      if (error) throw error
+      await stSignOut()
+      setUser(null)
+      setSession(null)
       return { error: null }
     } catch (error) {
       return { error: error.message }
@@ -120,10 +66,7 @@ export const AuthProvider = ({ children }) => {
     user,
     session,
     loading,
-    signUp,
-    signIn,
-    signOut,
-    resetPassword
+    signOut
   }
 
   return (

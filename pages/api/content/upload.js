@@ -1,7 +1,8 @@
-import { supabase } from '../../../lib/supabase'
+import { uploadFile } from '../../../lib/minio'
+import { prisma } from '../../../lib/prisma'
 import { withRateLimit } from '../../../lib/rateLimit'
 import { validateEnv, APP_CONFIG, STORAGE_CONFIG } from '../../../lib/config'
-import { uploadFile, validateFile } from '../../../lib/storage'
+import { validateFile } from '../../../lib/storage'
 import formidable from 'formidable'
 import { promises as fs } from 'fs'
 
