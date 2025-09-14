@@ -5,17 +5,18 @@ import { useRouter } from 'next/router'
 import Header from '../../components/layout/Header'
 import Sidebar from '../../components/layout/Sidebar'
 import { useAuth } from '../../contexts/AuthContext'
-import { 
-  TrendingUp, 
-  Users, 
-  DollarSign, 
-  MessageCircle, 
-  Eye, 
+import {
+  TrendingUp,
+  Users,
+  DollarSign,
+  MessageCircle,
+  Eye,
   Heart,
   Upload,
   Calendar,
   BarChart3,
-  Plus
+  Plus,
+  Crown
 } from 'lucide-react'
 
 export default function CreatorDashboard() {

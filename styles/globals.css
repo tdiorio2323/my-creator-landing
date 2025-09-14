@@ -77,7 +77,7 @@
   }
 
   .creator-card {
-    @apply card-premium hover:shadow-luxury-lg transition-all duration-300 cursor-pointer group;
+    @apply card-premium hover:shadow-luxury-lg transition-all duration-300 cursor-pointer;
   }
 
   /* Input System */

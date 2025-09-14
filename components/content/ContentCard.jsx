@@ -2,7 +2,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { Play, Heart, MessageCircle, Share, Lock, Eye, Clock } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
-import { hasActiveSubscription } from '../../lib/access'
+// Removed direct import of access functions - using API routes instead
 
 export default function ContentCard({ content, showStats = false }) {
   const { user } = useAuth()
@@ -38,18 +38,30 @@ export default function ContentCard({ content, showStats = false }) {
     }
 
     setLoading(true)
-    
-    // Check if user has access
-    const access = await hasActiveSubscription(user.id, content.creator_id)
-    
-    if (access || content.is_free) {
-      // Redirect to content view page
-      window.location.href = `/creator/${content.creator_id}/content/${content.id}`
-    } else {
-      // Show subscription prompt
+
+    try {
+      // Check if user has access via API
+      const response = await fetch(`/api/user/${user.id}/subscription/${content.creator_id}`, {
+        headers: {
+          'Authorization': `Bearer ${user.accessToken || ''}`,
+        }
+      })
+      const data = await response.json()
+      const access = data.hasAccess || false
+
+      if (access || content.is_free) {
+        // Redirect to content view page
+        window.location.href = `/creator/${content.creator_id}/content/${content.id}`
+      } else {
+        // Show subscription prompt
+        window.location.href = `/creator/${content.creator_id}`
+      }
+    } catch (error) {
+      console.error('Error checking subscription:', error)
+      // On error, redirect to creator page for subscription
       window.location.href = `/creator/${content.creator_id}`
     }
-    
+
     setLoading(false)
   }
 

@@ -4,7 +4,7 @@ import Head from 'next/head'
 import Image from 'next/image'
 import Header from '../../../../components/layout/Header'
 import { useAuth } from '../../../../contexts/AuthContext'
-import { canAccessContent, trackContentView } from '../../../../lib/access'
+// Removed direct import of access functions - using API routes instead
 import { Heart, Share, MessageCircle, Lock, Play, ArrowLeft } from 'lucide-react'
 
 export default function ContentPage() {
@@ -52,12 +52,30 @@ export default function ContentPage() {
 
         // Check access if user is logged in
         if (user) {
-          const access = await canAccessContent(user.id, postId)
-          setHasAccess(access)
-          
-          // Track view if user has access
-          if (access || contentData.is_free) {
-            await trackContentView(user.id, postId)
+          try {
+            const accessRes = await fetch(`/api/content/${postId}/access`, {
+              headers: {
+                'Authorization': `Bearer ${user.accessToken || ''}`,
+              }
+            })
+            const accessData = await accessRes.json()
+            const access = accessData.hasAccess || false
+            setHasAccess(access)
+
+            // Track view if user has access
+            if (access || contentData.is_free) {
+              fetch(`/api/content/${postId}/track-view`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${user.accessToken || ''}`,
+                },
+                body: JSON.stringify({ userId: user.id })
+              }).catch(err => console.error('Failed to track view:', err))
+            }
+          } catch (err) {
+            console.error('Error checking access:', err)
+            setHasAccess(contentData.is_free || false)
           }
         } else if (contentData.is_free) {
           setHasAccess(true)

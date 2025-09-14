@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Edit, Trash2, Star, Crown, Diamond, Users, DollarSign, Calendar, Gift } from 'lucide-react'
+import {  Plus, Edit, Trash2, Star, Crown, Diamond, Users, DollarSign, Calendar, Gift , TrendingUp } from 'lucide-react'
 import SubscribeButton from './SubscribeButton'
 
 export default function SubscriptionTiers({ isCreator = false, creatorTiers = [], creator = null, userSubscriptions = [], onSubscribe = null }) {
