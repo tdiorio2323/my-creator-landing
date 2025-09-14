@@ -4,7 +4,6 @@ import Head from 'next/head'
 import Image from 'next/image'
 import Header from '../../../../components/layout/Header'
 import { useAuth } from '../../../../contexts/AuthContext'
-import { supabase } from '../../../../lib/supabase'
 import { canAccessContent, trackContentView } from '../../../../lib/access'
 import { Heart, Share, MessageCircle, Lock, Play, ArrowLeft } from 'lucide-react'
 

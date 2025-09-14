@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Plus, Edit, Trash2, Star, Crown, Diamond, Users, DollarSign, Calendar, Gift } from 'lucide-react'
+import SubscribeButton from './SubscribeButton'
 
-export default function SubscriptionTiers({ isCreator = false, creatorTiers = [] }) {
+export default function SubscriptionTiers({ isCreator = false, creatorTiers = [], creator = null, userSubscriptions = [], onSubscribe = null }) {
   const [showCreateTier, setShowCreateTier] = useState(false)
   const [editingTier, setEditingTier] = useState(null)
   const [newTier, setNewTier] = useState({
@@ -111,172 +112,228 @@ export default function SubscriptionTiers({ isCreator = false, creatorTiers = []
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            {isCreator ? 'Manage Subscription Tiers' : 'Choose Your Support Level'}
-          </h2>
-          <p className="text-gray-600 mt-1">
-            {isCreator 
-              ? 'Create and manage your subscription offerings'
-              : 'Support this creator and unlock exclusive content'
-            }
-          </p>
+    <div className="space-y-8">
+      {/* Premium Header */}
+      <div className="text-center mb-12">
+        <div className="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur-md border border-primary-200/30 rounded-full text-primary-700 font-medium mb-6">
+          <Crown className="w-4 h-4 mr-2" />
+          {isCreator ? 'Premium Tier Management' : 'Exclusive Membership Tiers'}
+          <Diamond className="w-4 h-4 ml-2" />
         </div>
+
+        <h2 className="text-4xl font-bold mb-4">
+          <span className="bg-gradient-to-r from-luxury-900 to-primary-700 bg-clip-text text-transparent">
+            {isCreator ? 'Manage Premium Tiers' : 'Choose Your Membership'}
+          </span>
+        </h2>
+        <p className="text-xl text-luxury-600 max-w-3xl mx-auto">
+          {isCreator
+            ? 'Create exclusive subscription tiers to maximize your creator revenue and fan engagement'
+            : 'Join an exclusive community and unlock premium content tailored just for you'
+          }
+        </p>
+
         {isCreator && (
-          <button
-            onClick={() => setShowCreateTier(true)}
-            className="btn-primary flex items-center space-x-2"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add Tier</span>
-          </button>
+          <div className="mt-8">
+            <button
+              onClick={() => setShowCreateTier(true)}
+              className="btn-primary text-lg px-8 py-4 group"
+            >
+              <Plus className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" />
+              Create Premium Tier
+            </button>
+          </div>
         )}
       </div>
 
-      {/* Subscription Tiers Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {tiers.map((tier) => {
+      {/* Premium Tiers Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        {tiers.map((tier, index) => {
           const Icon = tier.icon
           const isLimitedSpots = tier.subscribers >= tier.maxSubscribers * 0.8
-          
+          const gradients = {
+            blue: 'from-blue-500 to-blue-600',
+            purple: 'from-primary-500 to-primary-600',
+            gold: 'from-secondary-400 to-secondary-600'
+          }
+
           return (
             <div
               key={tier.id}
-              className={`relative card overflow-hidden ${
-                tier.isPopular ? 'ring-2 ring-primary-500 ring-opacity-50' : ''
-              }`}
+              className={`relative group ${
+                tier.isPopular
+                  ? 'card-premium transform hover:scale-105 shadow-luxury-lg'
+                  : 'card-premium hover:scale-105'
+              } overflow-hidden transition-all duration-300`}
+              style={{
+                animationDelay: `${index * 0.1}s`,
+              }}
             >
-              {/* Popular Badge */}
+              {/* Luxury Background Pattern */}
+              <div className="absolute inset-0 opacity-5">
+                <div className="absolute inset-0" style={{
+                  backgroundImage: `radial-gradient(circle at 20% 50%, rgba(139, 68, 255, 0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(232, 108, 71, 0.15) 0%, transparent 50%)`,
+                  backgroundSize: '100px 100px'
+                }} />
+              </div>
+
+              {/* Premium Badge */}
               {tier.isPopular && (
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                  <span className="bg-primary-600 text-white text-xs px-4 py-1 rounded-full font-medium">
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                  <div className="status-premium px-6 py-2 shadow-luxury">
+                    <Crown className="w-3 h-3 mr-1 inline" />
                     Most Popular
-                  </span>
+                  </div>
                 </div>
               )}
 
               {/* Limited Spots Badge */}
               {isLimitedSpots && (
-                <div className="absolute top-3 right-3">
-                  <span className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">
+                <div className="absolute top-6 right-6 z-10">
+                  <span className="bg-gradient-to-r from-red-500 to-red-600 text-white text-xs px-3 py-2 rounded-full font-medium shadow-lg animate-pulse">
+                    <span className="w-2 h-2 bg-white rounded-full inline-block mr-1 animate-pulse" />
                     Limited Spots
                   </span>
                 </div>
               )}
 
-              <div className="p-6">
-                {/* Tier Header */}
-                <div className="text-center mb-6">
-                  <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
-                    tier.color === 'blue' ? 'bg-blue-100' :
-                    tier.color === 'purple' ? 'bg-purple-100' :
-                    tier.color === 'gold' ? 'bg-yellow-100' : 'bg-primary-100'
-                  }`}>
-                    <Icon className={`h-8 w-8 ${
-                      tier.color === 'blue' ? 'text-blue-600' :
-                      tier.color === 'purple' ? 'text-purple-600' :
-                      tier.color === 'gold' ? 'text-yellow-600' : 'text-primary-600'
-                    }`} />
+              <div className="relative p-8">
+                {/* Luxury Tier Header */}
+                <div className="text-center mb-8">
+                  <div className="relative mb-6">
+                    <div className={`w-20 h-20 mx-auto rounded-2xl flex items-center justify-center shadow-luxury bg-gradient-to-br ${
+                      tier.color === 'blue' ? gradients.blue :
+                      tier.color === 'purple' ? gradients.purple :
+                      tier.color === 'gold' ? gradients.gold : gradients.purple
+                    } group-hover:scale-110 transition-transform duration-300`}>
+                      <Icon className="h-10 w-10 text-white drop-shadow-lg" />
+                    </div>
+                    <div className="absolute -inset-2 bg-gradient-to-br from-primary-500/20 to-secondary-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900">{tier.name}</h3>
-                  <p className="text-gray-600 text-sm mt-1">{tier.description}</p>
+                  <h3 className="text-2xl font-bold text-luxury-900 mb-2 group-hover:text-primary-600 transition-colors">
+                    {tier.name}
+                  </h3>
+                  <p className="text-luxury-600 leading-relaxed">{tier.description}</p>
                 </div>
 
-                {/* Pricing */}
-                <div className="text-center mb-6">
-                  <div className="text-4xl font-bold text-gray-900 mb-2">
-                    ${tier.price}
-                    <span className="text-lg text-gray-500 font-normal">/month</span>
+                {/* Premium Pricing */}
+                <div className="text-center mb-8">
+                  <div className="relative mb-4">
+                    <div className="text-5xl font-bold mb-2">
+                      <span className="bg-gradient-to-r from-luxury-900 to-primary-700 bg-clip-text text-transparent">
+                        ${tier.price}
+                      </span>
+                      <span className="text-xl text-luxury-500 font-medium">/month</span>
+                    </div>
                   </div>
-                  
-                  {/* Subscriber Count */}
-                  <div className="flex items-center justify-center text-sm text-gray-600 mb-2">
-                    <Users className="h-4 w-4 mr-1" />
-                    <span>{tier.subscribers}/{tier.maxSubscribers} subscribers</span>
-                  </div>
-                  
-                  {/* Progress Bar */}
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className={`h-2 rounded-full ${
-                        tier.color === 'blue' ? 'bg-blue-500' :
-                        tier.color === 'purple' ? 'bg-purple-500' :
-                        tier.color === 'gold' ? 'bg-yellow-500' : 'bg-primary-500'
-                      }`}
-                      style={{ width: `${(tier.subscribers / tier.maxSubscribers) * 100}%` }}
-                    />
+
+                  {/* Subscriber Analytics */}
+                  <div className="glass-card p-4 mb-4">
+                    <div className="flex items-center justify-center text-luxury-600 mb-2">
+                      <Users className="h-4 w-4 mr-2" />
+                      <span className="font-medium">{tier.subscribers}/{tier.maxSubscribers} premium members</span>
+                    </div>
+
+                    {/* Luxury Progress Bar */}
+                    <div className="relative w-full bg-luxury-200/50 rounded-full h-3 overflow-hidden">
+                      <div
+                        className={`h-3 rounded-full bg-gradient-to-r ${
+                          tier.color === 'blue' ? 'from-blue-400 to-blue-600' :
+                          tier.color === 'purple' ? 'from-primary-400 to-primary-600' :
+                          tier.color === 'gold' ? 'from-secondary-400 to-secondary-600' : 'from-primary-400 to-primary-600'
+                        } shadow-inner transition-all duration-300`}
+                        style={{ width: `${(tier.subscribers / tier.maxSubscribers) * 100}%` }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent rounded-full" />
+                    </div>
+
+                    <div className="flex justify-between text-xs text-luxury-500 mt-2">
+                      <span>Exclusive</span>
+                      <span>{Math.round((tier.subscribers / tier.maxSubscribers) * 100)}% full</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Benefits */}
-                <div className="mb-6">
-                  <ul className="space-y-2">
+                {/* Premium Benefits */}
+                <div className="mb-8">
+                  <ul className="space-y-3">
                     {tier.benefits.map((benefit, index) => (
-                      <li key={index} className="flex items-start text-sm text-gray-700">
-                        <span className="text-green-500 mr-2 mt-0.5">✓</span>
-                        {benefit}
+                      <li key={index} className="flex items-start text-luxury-700 group">
+                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-accent-400 to-accent-600 flex items-center justify-center mr-3 mt-0.5 group-hover:scale-110 transition-transform duration-200">
+                          <span className="text-white text-xs font-bold">✓</span>
+                        </div>
+                        <span className="text-sm font-medium leading-relaxed group-hover:text-primary-600 transition-colors">
+                          {benefit}
+                        </span>
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                {/* Action Button */}
-                <div className="space-y-2">
+                {/* Premium Action Buttons */}
+                <div className="space-y-4">
                   {!isCreator ? (
                     <>
-                      <button 
-                        className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
-                          tier.subscribers >= tier.maxSubscribers
-                            ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                            : tier.isPopular
-                            ? 'bg-primary-600 hover:bg-primary-700 text-white'
-                            : 'bg-white border-2 border-gray-200 hover:border-primary-300 text-gray-900'
-                        }`}
-                        disabled={tier.subscribers >= tier.maxSubscribers}
-                      >
-                        {tier.subscribers >= tier.maxSubscribers 
-                          ? 'Tier Full' 
-                          : `Subscribe for $${tier.price}/mo`
-                        }
-                      </button>
-                      <button className="w-full text-sm text-primary-600 hover:text-primary-700 py-2">
-                        Gift This Tier
-                      </button>
+                      {tier.subscribers >= tier.maxSubscribers ? (
+                        <div className="text-center">
+                          <button
+                            className="w-full py-4 px-6 rounded-xl font-semibold transition-all bg-luxury-200 text-luxury-500 cursor-not-allowed"
+                            disabled
+                          >
+                            Membership Full - Join Waitlist
+                          </button>
+                        </div>
+                      ) : (
+                        <SubscribeButton
+                          creator={creator}
+                          tier={tier}
+                          isSubscribed={userSubscriptions?.some(sub => sub.tierId === tier.id) || false}
+                          onSubscribe={onSubscribe}
+                        />
+                      )}
+                      <div className="text-center">
+                        <button className="text-sm text-primary-600 hover:text-primary-700 font-medium py-2 px-4 rounded-lg hover:bg-primary-50/50 transition-colors flex items-center mx-auto group">
+                          <Gift className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
+                          Gift This Membership
+                        </button>
+                      </div>
                     </>
                   ) : (
-                    <div className="flex space-x-2">
-                      <button 
+                    <div className="flex space-x-3">
+                      <button
                         onClick={() => setEditingTier(tier.id)}
-                        className="flex-1 btn-secondary flex items-center justify-center space-x-1"
+                        className="flex-1 btn-secondary flex items-center justify-center space-x-2 group"
                       >
-                        <Edit className="h-4 w-4" />
-                        <span>Edit</span>
+                        <Edit className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                        <span>Edit Tier</span>
                       </button>
-                      <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
-                        <Trash2 className="h-4 w-4" />
+                      <button className="btn-icon text-red-600 hover:text-red-700 group">
+                        <Trash2 className="h-5 w-5 group-hover:scale-110 transition-transform" />
                       </button>
                     </div>
                   )}
                 </div>
 
-                {/* Creator Stats */}
+                {/* Premium Creator Analytics */}
                 {isCreator && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="mt-6">
+                    <div className="divider-luxury mb-6" />
+                    <div className="grid grid-cols-2 gap-6">
                       <div className="text-center">
-                        <div className="font-semibold text-green-600">
-                          ${(tier.price * tier.subscribers).toLocaleString()}
+                        <div className="text-2xl font-bold mb-1">
+                          <span className="bg-gradient-to-r from-accent-600 to-accent-700 bg-clip-text text-transparent">
+                            ${(tier.price * tier.subscribers).toLocaleString()}
+                          </span>
                         </div>
-                        <div className="text-gray-600">Monthly Revenue</div>
+                        <div className="metric-label">Monthly Revenue</div>
                       </div>
                       <div className="text-center">
-                        <div className="font-semibold text-blue-600">
-                          {Math.round((tier.subscribers / tier.maxSubscribers) * 100)}%
+                        <div className="text-2xl font-bold mb-1">
+                          <span className="bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
+                            {Math.round((tier.subscribers / tier.maxSubscribers) * 100)}%
+                          </span>
                         </div>
-                        <div className="text-gray-600">Capacity</div>
+                        <div className="metric-label">Capacity Filled</div>
                       </div>
                     </div>
                   </div>
@@ -451,16 +508,81 @@ export default function SubscriptionTiers({ isCreator = false, creatorTiers = []
         </div>
       )}
 
-      {/* Tier Management Tips for Creators */}
+      {/* Premium Creator Insights */}
       {isCreator && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h4 className="font-medium text-blue-900 mb-2">💡 Tier Management Tips</h4>
-          <ul className="text-sm text-blue-800 space-y-1">
-            <li>• Price tiers progressively higher with more exclusive benefits</li>
-            <li>• Limit VIP tiers to create scarcity and exclusivity</li>
-            <li>• Update benefits regularly to keep subscribers engaged</li>
-            <li>• Consider seasonal or limited-time special tiers</li>
-          </ul>
+        <div className="mt-16">
+          <div className="card-premium p-8 max-w-4xl mx-auto">
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-primary-500/10 to-secondary-500/10 rounded-full text-primary-700 font-medium mb-4">
+                <Diamond className="w-4 h-4 mr-2" />
+                Premium Creator Insights
+              </div>
+              <h4 className="text-2xl font-bold text-luxury-900 mb-2">Maximize Your Revenue Potential</h4>
+              <p className="text-luxury-600">Expert strategies to optimize your subscription tiers and boost fan engagement</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <h5 className="font-semibold text-luxury-900 flex items-center">
+                  <Crown className="w-5 h-5 mr-2 text-primary-600" />
+                  Tier Optimization
+                </h5>
+                <ul className="space-y-2 text-luxury-700">
+                  <li className="flex items-start">
+                    <span className="text-accent-500 mr-2 mt-1">✓</span>
+                    <span className="text-sm">Price tiers progressively with 2-3x multipliers for maximum value perception</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-accent-500 mr-2 mt-1">✓</span>
+                    <span className="text-sm">Limit premium tiers to create genuine scarcity and exclusivity</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-accent-500 mr-2 mt-1">✓</span>
+                    <span className="text-sm">Include 1-on-1 perks in highest tiers for personal connection</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="space-y-4">
+                <h5 className="font-semibold text-luxury-900 flex items-center">
+                  <TrendingUp className="w-5 h-5 mr-2 text-secondary-600" />
+                  Engagement Strategies
+                </h5>
+                <ul className="space-y-2 text-luxury-700">
+                  <li className="flex items-start">
+                    <span className="text-accent-500 mr-2 mt-1">✓</span>
+                    <span className="text-sm">Update benefits monthly to maintain subscriber interest</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-accent-500 mr-2 mt-1">✓</span>
+                    <span className="text-sm">Create seasonal or limited-time special access tiers</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-accent-500 mr-2 mt-1">✓</span>
+                    <span className="text-sm">Offer birthday surprises and anniversary rewards</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fan Engagement CTA */}
+      {!isCreator && (
+        <div className="mt-16 text-center">
+          <div className="glass-card p-8 max-w-2xl mx-auto">
+            <h4 className="text-2xl font-bold text-luxury-900 mb-4">
+              Can't decide which tier is perfect for you?
+            </h4>
+            <p className="text-luxury-600 mb-6">
+              Join our community and get personalized recommendations based on your interests and budget.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button className="btn-primary">Get Personalized Recommendations</button>
+              <button className="btn-secondary">View All Creator Content</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

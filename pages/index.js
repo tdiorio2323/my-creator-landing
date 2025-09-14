@@ -20,29 +20,44 @@ export default function Home() {
         <FeaturedCreators />
         
         {/* Categories Section */}
-        <section className="py-16 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Browse by Category
+        <section className="py-20 relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-luxury-50/50 to-primary-50/30" />
+
+          <div className="section-container relative">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-bold mb-6">
+                <span className="bg-gradient-to-r from-luxury-900 to-primary-700 bg-clip-text text-transparent">
+                  Browse by Category
+                </span>
               </h2>
-              <p className="text-lg text-gray-600">
-                Find creators in your favorite niches
+              <p className="text-xl text-luxury-600 max-w-2xl mx-auto">
+                Find premium creators in your favorite niches and discover exclusive content
               </p>
             </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
               {[
-                'Fitness', 'Cooking', 'Art', 'Tech', 'Music', 'Gaming',
-                'Fashion', 'Travel', 'Education', 'Comedy', 'Beauty', 'Business'
+                { name: 'Fitness', emoji: '💪', gradient: 'from-red-400 to-pink-500' },
+                { name: 'Cooking', emoji: '👨‍🍳', gradient: 'from-orange-400 to-yellow-500' },
+                { name: 'Art', emoji: '🎨', gradient: 'from-purple-400 to-pink-500' },
+                { name: 'Tech', emoji: '💻', gradient: 'from-blue-400 to-cyan-500' },
+                { name: 'Music', emoji: '🎵', gradient: 'from-indigo-400 to-purple-500' },
+                { name: 'Gaming', emoji: '🎮', gradient: 'from-green-400 to-blue-500' },
+                { name: 'Fashion', emoji: '👗', gradient: 'from-pink-400 to-rose-500' },
+                { name: 'Travel', emoji: '✈️', gradient: 'from-cyan-400 to-teal-500' },
+                { name: 'Education', emoji: '📚', gradient: 'from-emerald-400 to-green-500' },
+                { name: 'Comedy', emoji: '😂', gradient: 'from-yellow-400 to-orange-500' },
+                { name: 'Beauty', emoji: '💄', gradient: 'from-rose-400 to-pink-500' },
+                { name: 'Business', emoji: '💼', gradient: 'from-slate-400 to-gray-600' }
               ].map((category) => (
-                <div key={category} className="card p-6 text-center hover:shadow-md transition-shadow cursor-pointer">
-                  <div className="w-12 h-12 bg-primary-100 rounded-full mx-auto mb-3 flex items-center justify-center">
-                    <span className="text-primary-600 font-semibold">
-                      {category[0]}
-                    </span>
+                <div key={category.name} className="glass-card p-6 text-center hover-lift cursor-pointer group">
+                  <div className={`w-16 h-16 bg-gradient-to-br ${category.gradient} rounded-2xl mx-auto mb-4 flex items-center justify-center text-2xl shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    {category.emoji}
                   </div>
-                  <h3 className="font-medium text-gray-900">{category}</h3>
+                  <h3 className="font-semibold text-luxury-900 group-hover:text-primary-600 transition-colors">
+                    {category.name}
+                  </h3>
+                  <p className="text-xs text-luxury-500 mt-1 uppercase tracking-wide">Premium</p>
                 </div>
               ))}
             </div>
@@ -50,46 +65,86 @@ export default function Home() {
         </section>
 
         {/* How It Works */}
-        <section className="py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                How It Works
+        <section className="py-24 relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-white to-primary-50/20" />
+
+          <div className="section-container relative">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-bold mb-6">
+                <span className="bg-gradient-to-r from-luxury-900 to-primary-700 bg-clip-text text-transparent">
+                  How It Works
+                </span>
               </h2>
-              <p className="text-lg text-gray-600">
-                Get started in just a few simple steps
+              <p className="text-xl text-luxury-600 max-w-2xl mx-auto">
+                Join our premium platform in three simple steps and unlock exclusive content
               </p>
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-primary-600 rounded-full mx-auto mb-4 flex items-center justify-center text-white text-2xl font-bold">
-                  1
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
+              {/* Connecting lines */}
+              <div className="hidden md:block absolute top-16 left-1/4 right-1/4 h-px bg-gradient-to-r from-primary-200 via-secondary-200 to-accent-200" />
+
+              {[
+                {
+                  step: 1,
+                  title: 'Discover',
+                  description: 'Browse thousands of premium creators and find exclusive content you love',
+                  icon: '🔍',
+                  gradient: 'from-primary-500 to-primary-600'
+                },
+                {
+                  step: 2,
+                  title: 'Subscribe',
+                  description: 'Choose a premium subscription tier that perfectly fits your preferences',
+                  icon: '💎',
+                  gradient: 'from-secondary-500 to-secondary-600'
+                },
+                {
+                  step: 3,
+                  title: 'Enjoy',
+                  description: 'Access exclusive content and connect directly with your favorite creators',
+                  icon: '✨',
+                  gradient: 'from-accent-500 to-accent-600'
+                }
+              ].map((item, index) => (
+                <div key={item.step} className="text-center relative">
+                  <div className="glass-card p-8 hover-lift group">
+                    <div className={`w-20 h-20 bg-gradient-to-br ${item.gradient} rounded-2xl mx-auto mb-6 flex items-center justify-center text-3xl shadow-luxury group-hover:scale-110 transition-all duration-300`}>
+                      {item.icon}
+                    </div>
+
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-luxury-900 to-luxury-700 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg">
+                      {item.step}
+                    </div>
+
+                    <h3 className="text-2xl font-bold text-luxury-900 mb-4 group-hover:text-primary-600 transition-colors">
+                      {item.title}
+                    </h3>
+                    <p className="text-luxury-600 leading-relaxed">
+                      {item.description}
+                    </p>
+                  </div>
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Discover</h3>
-                <p className="text-gray-600">
-                  Browse thousands of creators and find content you love
+              ))}
+            </div>
+
+            {/* Premium CTA */}
+            <div className="text-center mt-16">
+              <div className="glass-card p-8 max-w-2xl mx-auto">
+                <h3 className="text-2xl font-bold text-luxury-900 mb-4">
+                  Ready to Experience Premium Content?
+                </h3>
+                <p className="text-luxury-600 mb-6">
+                  Join thousands of subscribers who enjoy exclusive access to the world's best creators.
                 </p>
-              </div>
-              
-              <div className="text-center">
-                <div className="w-16 h-16 bg-primary-600 rounded-full mx-auto mb-4 flex items-center justify-center text-white text-2xl font-bold">
-                  2
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Link href="/explore" className="btn-primary">
+                    Start Exploring
+                  </Link>
+                  <Link href="/auth/register?creator=true" className="btn-secondary">
+                    Become a Creator
+                  </Link>
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Subscribe</h3>
-                <p className="text-gray-600">
-                  Choose a subscription tier that fits your budget
-                </p>
-              </div>
-              
-              <div className="text-center">
-                <div className="w-16 h-16 bg-primary-600 rounded-full mx-auto mb-4 flex items-center justify-center text-white text-2xl font-bold">
-                  3
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Enjoy</h3>
-                <p className="text-gray-600">
-                  Access exclusive content and connect with creators
-                </p>
               </div>
             </div>
           </div>

@@ -1,146 +1,110 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 ## Project Overview
 
-- **Name**: creator-subscription-platform
-- **Version**: 0.1.0
-- **Primary Language**: JavaScript
-- **Next.js Router**: Pages Router
-
-### Key Technologies
-- Next.js Pages Router
-- Supabase
-- NextAuth.js
-- Stripe
-- Tailwind CSS
-- Framer Motion
-- Lucide React
-
-## Directory Structure
-```
-.
-├── AGENTS.md
-├── CLAUDE.md
-├── COMPONENT_STRUCTURE.md
-├── components
-│   ├── common
-│   ├── content
-│   ├── creator
-│   ├── creator-dashboard
-│   ├── layout
-│   ├── messaging
-│   ├── public
-│   └── subscriber
-├── contexts
-│   └── AuthContext.js
-├── DEPLOYMENT.md
-├── legacy
-│   ├── index.html
-│   ├── src
-│   └── vite.config.js
-├── lib
-│   ├── access.js
-│   ├── auth-guards.js
-│   ├── config.js
-│   ├── rateLimit.js
-│   ├── storage.js
-│   ├── stripe.js
-│   └── supabase.js
-├── next.config.js
-├── package-lock.json
-├── package.json
-├── pages
-│   ├── _app.js
-│   ├── api
-│   ├── auth
-│   ├── categories.js
-│   ├── creator
-│   ├── creator-dashboard
-│   ├── dashboard
-│   ├── explore.js
-│   ├── index.js
-│   └── success.js
-├── postcss.config.js
-├── public
-│   ├── favicon.ico
-│   ├── logo192.png
-│   ├── logo512.png
-│   ├── manifest.json
-│   └── robots.txt
-├── README.md
-├── scripts
-│   └── seed.js
-├── sql
-│   ├── 01_create_tables.sql
-│   ├── 02_create_policies.sql
-│   ├── 03_create_functions.sql
-│   ├── 04_seed_data.sql
-│   └── README.md
-├── src
-├── styles
-│   └── globals.css
-├── tailwind.config.js
-└── utils
-    └── auth.js
-
-26 directories, 38 files
-```
+CreatorHub is an OnlyFans-style creator subscription platform built with Next.js, Prisma, Stripe, and SuperTokens authentication. Creators can monetize content through tiered subscriptions while subscribers get exclusive access to content based on their subscription level.
 
 ## Development Commands
-```
-dev: next dev
-build: next build
-start: next start
-lint: next lint
-```
 
-## Environment Variables
-**Defined keys**
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+
+### Database Management
+
+- `npx prisma generate` - Generate Prisma client after schema changes
+- `npx prisma db push` - Push schema changes to database
+- `npx prisma studio` - Open Prisma Studio for database inspection
+- `npx prisma db seed` - Seed database (if seeding is configured)
+
+## Architecture Overview
+
+### Authentication System
+- **SuperTokens** handles auth with email/password authentication
+- User creation automatically creates corresponding Prisma user records
+- Authentication endpoints at `/api/auth/[[...path]].js` handle all auth flows
+- Session management integrated with Prisma for user data
+
+### Database Architecture
+- **Prisma ORM** with PostgreSQL database
+- **Three-tier subscription system**: Basic ($9.99), Premium ($19.99), VIP ($49.99)
+- **Role-based access**: SUBSCRIBER, CREATOR, ADMIN
+- **Content access control** based on subscription tiers and user roles
+
+### Key Database Models
+- `User` - Core user data, linked to SuperTokens
+- `Creator` - Extended creator profile with earnings/analytics
+- `SubscriptionTier` - Creator-defined pricing tiers
+- `Subscription` - Active subscriptions with Stripe integration
+- `Content` - Creator content with tier-based access control
+- `Payment` - Transaction records linked to Stripe
+
+### Payment Integration
+- **Stripe** for subscription management and payments
+- Webhook endpoint at `/api/stripe/webhook.js` handles subscription events
+- Checkout flow at `/api/stripe/checkout.js`
+- Customer portal at `/api/stripe/portal.js`
+
+### Content Access Control
+- `lib/access.js` contains all access control logic
+- `hasActiveSubscription()` - Checks active subscription status
+- `canAccessContent()` - Validates content access based on tier
+- `trackContentView()` - Analytics tracking for content views
+
+## Configuration
+
+### Environment Variables
+Core required variables (see `lib/config.js` for validation):
 ```
-AWS_ACCESS_KEY_ID
-AWS_REGION
-AWS_S3_BUCKET
-AWS_SECRET_ACCESS_KEY
-DATABASE_URL
-EMAIL_FROM
-EMAIL_SERVER_HOST
-EMAIL_SERVER_PASSWORD
-EMAIL_SERVER_PORT
-EMAIL_SERVER_USER
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-NEXT_PUBLIC_SUPABASE_ANON_KEY
-NEXT_PUBLIC_SUPABASE_URL
-NEXTAUTH_SECRET
-NEXTAUTH_URL
 STRIPE_SECRET_KEY
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 STRIPE_WEBHOOK_SECRET
-```
-- Check .env*.example for defaults if present.
-
-## API Architecture
-- API routes present
-- Authentication: NextAuth.js
-- Supabase client present; add RLS notes if applicable.
-- Payments: Stripe; ensure webhook route configured.
-
-### Image Optimization
-- Next.js image domains configured: `domains: ['localhost', 'example.com']`
-
-## Database
-- SQL migration files in /sql
-- Supabase detected. Confirm RLS policies.
-
-## Build & Run
-```bash
-npm ci
-npm run build
-npm start # or: next start / vite preview
+DATABASE_URL
+SUPERTOKENS_CONNECTION_URI
+SUPERTOKENS_API_KEY
+NEXTAUTH_SECRET
 ```
 
-## Checks
-- Lint: `npm run lint` if available
-- Typecheck: `npm run typecheck` if TS
-- Test: `npm test`
+### Stripe Configuration
+- Subscription tiers configured in `lib/config.js`
+- Price IDs map to Stripe products: `price_basic_monthly`, `price_premium_monthly`, `price_vip_monthly`
+- Webhook events update local subscription status
 
-## Notes
-- Update sections above as needed. This file is generated and then hand-edited.
+## File Structure Patterns
+
+### API Routes
+- `/api/auth/[[...path]].js` - SuperTokens authentication
+- `/api/stripe/*` - Payment processing
+- `/api/user/*` - User data management
+- `/api/content/*` - Content management
+- `/api/messages/*` - Direct messaging
+
+### Components
+- `components/creator/` - Creator-specific UI components
+- `components/subscriber/` - Subscriber-facing components
+- `components/messaging/` - Chat/messaging components
+- `components/layout/` - Shared layout components
+
+### Key Utilities
+- `lib/prisma.js` - Database client singleton
+- `lib/supertokens.js` - Authentication configuration
+- `lib/access.js` - Content access control logic
+- `lib/config.js` - Application configuration and validation
+
+## Development Workflow
+
+1. **Database Changes**: Update `prisma/schema.prisma` → `npx prisma db push`
+2. **Authentication**: SuperTokens handles all auth flows automatically
+3. **Payment Testing**: Use Stripe test mode webhooks for local development
+4. **Content Access**: Always check user permissions via `lib/access.js` functions
+
+## Important Notes
+
+- **Database migrations**: Use Prisma's push workflow for development
+- **Content security**: All content access goes through tier-based validation
+- **Stripe webhooks**: Required for subscription status synchronization
+- **SuperTokens integration**: User creation automatically syncs with Prisma
+- **Image domains**: Configure `next.config.js` for external image sources

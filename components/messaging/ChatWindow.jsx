@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Send, Smile, Paperclip } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
-import { supabase } from '../../lib/supabase'
 
 export default function ChatWindow({ recipientId, recipientName, recipientAvatar }) {
   const { user } = useAuth()
@@ -19,38 +18,13 @@ export default function ChatWindow({ recipientId, recipientName, recipientAvatar
 
     const fetchMessages = async () => {
       try {
-        const { data, error } = await supabase
-          .from('messages')
-          .select(`
-            *,
-            sender:sender_id (
-              id,
-              username,
-              full_name,
-              avatar_url
-            ),
-            recipient:recipient_id (
-              id,
-              username,
-              full_name,
-              avatar_url
-            )
-          `)
-          .or(`and(sender_id.eq.${user.id},recipient_id.eq.${recipientId}),and(sender_id.eq.${recipientId},recipient_id.eq.${user.id})`)
-          .order('created_at', { ascending: true })
+        const response = await fetch(`/api/messages/conversation?recipientId=${recipientId}`)
 
-        if (error) {
-          console.error('Error fetching messages:', error)
+        if (response.ok) {
+          const { messages } = await response.json()
+          setMessages(messages || [])
         } else {
-          setMessages(data || [])
-          
-          // Mark messages as read
-          await supabase
-            .from('messages')
-            .update({ is_read: true })
-            .eq('sender_id', recipientId)
-            .eq('recipient_id', user.id)
-            .eq('is_read', false)
+          console.error('Error fetching messages:', response.statusText)
         }
       } catch (error) {
         console.error('Error fetching messages:', error)
@@ -62,22 +36,11 @@ export default function ChatWindow({ recipientId, recipientName, recipientAvatar
     fetchMessages()
     scrollToBottom()
 
-    // Subscribe to new messages
-    const channel = supabase
-      .channel('messages')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `or(and(sender_id.eq.${user.id},recipient_id.eq.${recipientId}),and(sender_id.eq.${recipientId},recipient_id.eq.${user.id}))`
-      }, (payload) => {
-        setMessages(prev => [...prev, payload.new])
-        scrollToBottom()
-      })
-      .subscribe()
+    // Poll for new messages every 3 seconds (simple replacement for real-time)
+    const interval = setInterval(fetchMessages, 3000)
 
     return () => {
-      supabase.removeChannel(channel)
+      clearInterval(interval)
     }
   }, [user, recipientId])
 
@@ -90,18 +53,24 @@ export default function ChatWindow({ recipientId, recipientName, recipientAvatar
     if (!newMessage.trim() || !user || !recipientId) return
 
     try {
-      const { error } = await supabase
-        .from('messages')
-        .insert({
-          sender_id: user.id,
-          recipient_id: recipientId,
+      const response = await fetch('/api/messages/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          recipientId: recipientId,
           content: newMessage.trim()
         })
+      })
 
-      if (error) {
-        console.error('Error sending message:', error)
-      } else {
+      if (response.ok) {
+        const { message } = await response.json()
+        setMessages(prev => [...prev, message])
         setNewMessage('')
+        scrollToBottom()
+      } else {
+        console.error('Error sending message:', response.statusText)
       }
     } catch (error) {
       console.error('Error sending message:', error)
@@ -168,7 +137,7 @@ export default function ChatWindow({ recipientId, recipientName, recipientAvatar
           </div>
         ) : (
           messages.map((message) => {
-            const isOwn = message.sender_id === user.id
+            const isOwn = message.senderId === user.id
             
             return (
               <div
@@ -184,7 +153,7 @@ export default function ChatWindow({ recipientId, recipientName, recipientAvatar
                   <p className={`text-xs mt-1 ${
                     isOwn ? 'text-primary-100' : 'text-gray-500'
                   }`}>
-                    {formatTime(message.created_at)}
+                    {formatTime(message.createdAt)}
                   </p>
                 </div>
               </div>

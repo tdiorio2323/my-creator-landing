@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import Header from '../../components/layout/Header'
 import CreatorProfile from '../../components/creator/CreatorProfile'
-import { supabase } from '../../lib/supabase'
 
 export default function CreatorPage() {
   const router = useRouter()

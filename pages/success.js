@@ -4,7 +4,6 @@ import Head from 'next/head'
 import Link from 'next/link'
 import Header from '../components/layout/Header'
 import { useAuth } from '../contexts/AuthContext'
-import { supabase } from '../lib/supabase'
 import { CheckCircle, Clock, ArrowRight } from 'lucide-react'
 
 export default function SuccessPage() {
@@ -27,32 +26,12 @@ export default function SuccessPage() {
         const pollInterval = 2000 // 2 seconds
 
         const poll = async () => {
-          const { data, error } = await supabase
-            .from('subscriptions')
-            .select(`
-              *,
-              creators (
-                id,
-                display_name,
-                profiles:user_id (
-                  full_name,
-                  avatar_url
-                )
-              ),
-              subscription_tiers (
-                name,
-                price
-              )
-            `)
-            .eq('subscriber_id', user.id)
-            .eq('status', 'active')
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single()
+          const response = await fetch('/api/user/subscription-status')
 
-          if (!error && data) {
+          if (response.ok) {
+            const data = await response.json()
             setSubscription(data)
-            setCreator(data.creators)
+            setCreator(data.creator)
             setStatus('success')
             return true
           }
@@ -123,16 +102,16 @@ export default function SuccessPage() {
                 Welcome to the community! 🎉
               </h1>
               <p className="text-lg text-gray-600 mb-6">
-                Your subscription to {creator?.display_name || 'the creator'} is now active
+                Your subscription to {creator?.displayName || 'the creator'} is now active
               </p>
               
               {subscription && (
                 <div className="bg-gray-50 rounded-lg p-6 mb-6">
                   <h3 className="font-semibold text-gray-900 mb-2">Subscription Details</h3>
                   <div className="text-sm text-gray-600 space-y-1">
-                    <p><span className="font-medium">Tier:</span> {subscription.subscription_tiers?.name}</p>
-                    <p><span className="font-medium">Price:</span> ${subscription.subscription_tiers?.price}/month</p>
-                    <p><span className="font-medium">Next billing:</span> {new Date(subscription.current_period_end).toLocaleDateString()}</p>
+                    <p><span className="font-medium">Tier:</span> {subscription.tier?.name}</p>
+                    <p><span className="font-medium">Price:</span> ${subscription.tier?.price}/month</p>
+                    <p><span className="font-medium">Next billing:</span> {new Date(subscription.currentPeriodEnd).toLocaleDateString()}</p>
                   </div>
                 </div>
               )}

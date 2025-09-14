@@ -5,7 +5,6 @@ import Header from '../../components/layout/Header'
 import Sidebar from '../../components/layout/Sidebar'
 import PersonalizedFeed from '../../components/subscriber/PersonalizedFeed'
 import { useAuth } from '../../contexts/AuthContext'
-import { supabase } from '../../lib/supabase'
 import { Bell, TrendingUp, Users, Heart, CreditCard } from 'lucide-react'
 
 export default function Dashboard() {
@@ -29,53 +28,15 @@ export default function Dashboard() {
 
     const fetchUserData = async () => {
       try {
-        // Get user's active subscriptions
-        const { data: subsData, error: subsError } = await supabase
-          .from('subscriptions')
-          .select(`
-            *,
-            creators (
-              id,
-              display_name,
-              profiles:user_id (
-                full_name,
-                avatar_url
-              )
-            ),
-            subscription_tiers (
-              name,
-              price
-            )
-          `)
-          .eq('subscriber_id', user.id)
-          .eq('status', 'active')
+        const response = await fetch('/api/user/dashboard')
 
-        if (subsError) {
-          console.error('Error fetching subscriptions:', subsError)
+        if (response.ok) {
+          const { subscriptions, stats } = await response.json()
+          setSubscriptions(subscriptions)
+          setStats(stats)
         } else {
-          setSubscriptions(subsData || [])
-          
-          // Calculate total monthly spending
-          const totalSpent = subsData?.reduce((sum, sub) => sum + (sub.subscription_tiers?.price || 0), 0) || 0
-          
-          setStats(prev => ({
-            ...prev,
-            activeSubscriptions: subsData?.length || 0,
-            totalSpent,
-            favoriteCreators: subsData?.length || 0
-          }))
+          console.error('Error fetching dashboard data:', response.statusText)
         }
-
-        // Get content views count
-        const { count: viewCount } = await supabase
-          .from('content_views')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-
-        setStats(prev => ({
-          ...prev,
-          contentViewed: viewCount || 0
-        }))
 
       } catch (error) {
         console.error('Error fetching dashboard data:', error)

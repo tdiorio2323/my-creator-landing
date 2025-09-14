@@ -41,14 +41,17 @@ async function uploadHandler(req, res) {
     }
 
     // Validate user is the creator
-    const { data: creator, error: creatorError } = await supabase
-      .from('creators')
-      .select('id')
-      .eq('id', creatorId[0])
-      .eq('user_id', userId[0])
-      .single()
+    const creator = await prisma.creator.findFirst({
+      where: {
+        id: creatorId[0],
+        userId: userId[0]
+      },
+      select: {
+        id: true
+      }
+    })
 
-    if (creatorError || !creator) {
+    if (!creator) {
       return res.status(403).json({ error: 'Unauthorized: Not the creator' })
     }
 
@@ -81,42 +84,37 @@ async function uploadHandler(req, res) {
       type: file.mimetype 
     })
 
-    // Upload to Supabase Storage
-    const { path, error: uploadError } = await uploadFile(
-      fileObj,
-      STORAGE_CONFIG.BUCKETS.CREATOR_CONTENT,
-      filePath
-    )
+    // Upload to MinIO Storage
+    const uploadResult = await uploadFile(fileObj, filePath)
 
-    if (uploadError) {
-      return res.status(500).json({ error: uploadError })
+    if (!uploadResult.success) {
+      return res.status(500).json({ error: uploadResult.error })
     }
 
     // TODO: Generate thumbnail for videos/images
     // For now, use a placeholder or the same file path
-    const thumbnailPath = path
+    const thumbnailPath = uploadResult.key
 
     // Create content record in database
-    const { data: content, error: contentError } = await supabase
-      .from('content')
-      .insert({
-        creator_id: creatorId[0],
+    const content = await prisma.content.create({
+      data: {
+        creatorId: creatorId[0],
         title: title[0],
         description: description?.[0] || null,
-        content_type: contentType[0],
-        media_url: path,
-        thumbnail_url: thumbnailPath,
-        required_tier: requiredTier?.[0] || 'basic',
-        is_free: isFree?.[0] === 'true',
-        published_at: new Date().toISOString()
-      })
-      .select()
-      .single()
-
-    if (contentError) {
-      console.error('Error creating content record:', contentError)
-      return res.status(500).json({ error: 'Failed to create content record' })
-    }
+        contentType: contentType[0].toUpperCase(),
+        mediaUrl: uploadResult.key,
+        thumbnailUrl: thumbnailPath,
+        requiredTier: requiredTier?.[0]?.toUpperCase() || 'BASIC',
+        isFree: isFree?.[0] === 'true',
+        publishedAt: new Date()
+      },
+      select: {
+        id: true,
+        title: true,
+        contentType: true,
+        createdAt: true
+      }
+    })
 
     // Clean up temporary file
     try {
@@ -130,8 +128,8 @@ async function uploadHandler(req, res) {
       content: {
         id: content.id,
         title: content.title,
-        contentType: content.content_type,
-        createdAt: content.created_at
+        contentType: content.contentType,
+        createdAt: content.createdAt
       }
     })
 

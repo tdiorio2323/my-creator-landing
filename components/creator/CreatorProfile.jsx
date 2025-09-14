@@ -1,8 +1,51 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useAuth } from '../../contexts/AuthContext'
 import { Users, Star, Heart, Share, MessageCircle, Gift, Play, Image as ImageIcon, Lock, Calendar } from 'lucide-react'
+import SubscriptionTiers from './SubscriptionTiers'
 
 export default function CreatorProfile({ creator }) {
   const [activeTab, setActiveTab] = useState('posts')
+  const [userSubscriptions, setUserSubscriptions] = useState([])
+  const [loadingSubscriptions, setLoadingSubscriptions] = useState(true)
+  const { user } = useAuth()
+
+  // Fetch user's subscription status for this creator
+  useEffect(() => {
+    const fetchUserSubscriptions = async () => {
+      if (!user) {
+        setLoadingSubscriptions(false)
+        return
+      }
+
+      try {
+        const response = await fetch(`/api/user/subscription-status?creatorId=${creator.id}`)
+        const data = await response.json()
+
+        if (response.ok) {
+          setUserSubscriptions(data.subscriptions || [])
+        } else {
+          console.error('Failed to fetch subscriptions:', data.error)
+          setUserSubscriptions([])
+        }
+      } catch (error) {
+        console.error('Error fetching subscriptions:', error)
+        setUserSubscriptions([])
+      } finally {
+        setLoadingSubscriptions(false)
+      }
+    }
+
+    fetchUserSubscriptions()
+  }, [creator.id, user])
+
+  const handleSubscribeSuccess = (tier) => {
+    // Refresh subscription data after successful subscription
+    setUserSubscriptions(prev => [...prev, {
+      tierId: tier.id,
+      creatorId: creator.id,
+      tier
+    }])
+  }
 
   return (
     <div className="bg-white">
@@ -159,66 +202,22 @@ export default function CreatorProfile({ creator }) {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Subscription Card */}
+            {/* Subscription Tiers */}
             <div className="card p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Subscribe to {creator.name}
-              </h3>
-              
-              {/* Subscription Tiers */}
-              <div className="space-y-4">
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-gray-900">Basic</span>
-                    <span className="text-lg font-bold text-gray-900">$9.99/mo</span>
-                  </div>
-                  <ul className="text-sm text-gray-600 space-y-1 mb-4">
-                    <li>• Access to all posts</li>
-                    <li>• Photo galleries</li>
-                    <li>• Community chat</li>
-                  </ul>
-                  <button className="w-full btn-primary">
-                    Subscribe
-                  </button>
+              {loadingSubscriptions ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-2"></div>
+                  <p className="text-sm text-gray-600">Loading subscription options...</p>
                 </div>
-
-                <div className="border-2 border-primary-200 bg-primary-50 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center">
-                      <span className="font-medium text-gray-900">Premium</span>
-                      <span className="ml-2 bg-primary-600 text-white text-xs px-2 py-1 rounded">
-                        Popular
-                      </span>
-                    </div>
-                    <span className="text-lg font-bold text-gray-900">$19.99/mo</span>
-                  </div>
-                  <ul className="text-sm text-gray-600 space-y-1 mb-4">
-                    <li>• Everything in Basic</li>
-                    <li>• HD video content</li>
-                    <li>• Live stream access</li>
-                    <li>• Direct messaging</li>
-                  </ul>
-                  <button className="w-full btn-primary">
-                    Subscribe
-                  </button>
-                </div>
-
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-gray-900">VIP</span>
-                    <span className="text-lg font-bold text-gray-900">$49.99/mo</span>
-                  </div>
-                  <ul className="text-sm text-gray-600 space-y-1 mb-4">
-                    <li>• Everything in Premium</li>
-                    <li>• 1-on-1 video calls</li>
-                    <li>• Custom content requests</li>
-                    <li>• Priority support</li>
-                  </ul>
-                  <button className="w-full btn-primary">
-                    Subscribe
-                  </button>
-                </div>
-              </div>
+              ) : (
+                <SubscriptionTiers
+                  isCreator={false}
+                  creatorTiers={creator.subscription_tiers || []}
+                  creator={creator}
+                  userSubscriptions={userSubscriptions}
+                  onSubscribe={handleSubscribeSuccess}
+                />
+              )}
             </div>
 
             {/* Send Tip */}

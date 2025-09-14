@@ -1,5 +1,5 @@
 import { stripe } from '../../../lib/stripe'
-import { supabase } from '../../../lib/supabase'
+import { prisma } from '../../../lib/prisma'
 import { withRateLimit } from '../../../lib/rateLimit'
 import { validateEnv } from '../../../lib/config'
 
@@ -18,29 +18,28 @@ async function portalHandler(req, res) {
       return res.status(400).json({ error: 'User ID is required' })
     }
 
-    // Validate UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    if (!uuidRegex.test(userId)) {
-      return res.status(400).json({ error: 'Invalid user ID format' })
-    }
-
     // Get user's profile
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('stripe_customer_id, username, full_name')
-      .eq('id', userId)
-      .single()
+    const profile = await prisma.user.findUnique({
+      where: {
+        id: userId
+      },
+      select: {
+        stripeCustomerId: true,
+        username: true,
+        fullName: true
+      }
+    })
 
-    if (error || !profile) {
+    if (!profile) {
       return res.status(404).json({ error: 'User profile not found' })
     }
 
-    let customerId = profile.stripe_customer_id
+    let customerId = profile.stripeCustomerId
 
     // Create customer if they don't have one
     if (!customerId) {
       const customer = await stripe.customers.create({
-        name: profile.full_name,
+        name: profile.fullName,
         metadata: {
           userId: userId,
           username: profile.username || ''
@@ -49,12 +48,12 @@ async function portalHandler(req, res) {
       customerId = customer.id
 
       // Update profile with customer ID
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ stripe_customer_id: customerId })
-        .eq('id', userId)
-
-      if (updateError) {
+      try {
+        await prisma.user.update({
+          where: { id: userId },
+          data: { stripeCustomerId: customerId }
+        })
+      } catch (updateError) {
         console.error('Failed to update customer ID:', updateError)
       }
     }

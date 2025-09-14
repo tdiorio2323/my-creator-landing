@@ -1,5 +1,5 @@
 import { stripe } from '../../../lib/stripe'
-import { supabase } from '../../../lib/supabase'
+import { prisma } from '../../../lib/prisma'
 import { withRateLimit } from '../../../lib/rateLimit'
 import { validateEnv, STRIPE_CONFIG } from '../../../lib/config'
 
@@ -21,56 +21,64 @@ async function checkoutHandler(req, res) {
       })
     }
 
-    // Validate UUIDs
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    if (!uuidRegex.test(tierId) || !uuidRegex.test(creatorId) || !uuidRegex.test(userId)) {
-      return res.status(400).json({ error: 'Invalid ID format' })
-    }
-
     // Get tier details and validate it exists and is active
-    const { data: tier, error: tierError } = await supabase
-      .from('subscription_tiers')
-      .select('*, creators!inner(id, is_active)')
-      .eq('id', tierId)
-      .eq('creator_id', creatorId)
-      .eq('is_active', true)
-      .eq('creators.is_active', true)
-      .single()
+    const tier = await prisma.subscriptionTier.findFirst({
+      where: {
+        id: tierId,
+        creatorId: creatorId,
+        isActive: true,
+        creator: {
+          user: {
+            role: 'CREATOR'
+          }
+        }
+      },
+      include: {
+        creator: true
+      }
+    })
 
-    if (tierError || !tier) {
+    if (!tier) {
       return res.status(404).json({ error: 'Subscription tier not found or not available' })
     }
 
     // Check if user already has an active subscription to this creator
-    const { data: existingSub } = await supabase
-      .from('subscriptions')
-      .select('id')
-      .eq('subscriber_id', userId)
-      .eq('creator_id', creatorId)
-      .eq('status', 'active')
-      .single()
+    const existingSub = await prisma.subscription.findUnique({
+      where: {
+        subscriberId_creatorId: {
+          subscriberId: userId,
+          creatorId: creatorId
+        }
+      }
+    })
 
-    if (existingSub) {
+    if (existingSub && existingSub.status === 'ACTIVE') {
       return res.status(409).json({ error: 'Already subscribed to this creator' })
     }
 
     // Get user profile
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('id, username, full_name, stripe_customer_id')
-      .eq('id', userId)
-      .single()
+    const profile = await prisma.user.findUnique({
+      where: {
+        id: userId
+      },
+      select: {
+        id: true,
+        username: true,
+        fullName: true,
+        stripeCustomerId: true
+      }
+    })
 
-    if (profileError || !profile) {
+    if (!profile) {
       return res.status(404).json({ error: 'User profile not found' })
     }
 
-    let customerId = profile.stripe_customer_id
+    let customerId = profile.stripeCustomerId
 
     // Create Stripe customer if needed
     if (!customerId) {
       const customer = await stripe.customers.create({
-        name: profile.full_name,
+        name: profile.fullName,
         metadata: {
           userId: userId,
           username: profile.username || ''
@@ -79,18 +87,18 @@ async function checkoutHandler(req, res) {
       customerId = customer.id
 
       // Update profile with customer ID
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ stripe_customer_id: customerId })
-        .eq('id', userId)
-
-      if (updateError) {
+      try {
+        await prisma.user.update({
+          where: { id: userId },
+          data: { stripeCustomerId: customerId }
+        })
+      } catch (updateError) {
         console.error('Failed to update customer ID:', updateError)
       }
     }
 
     // Map tier type to price ID
-    const priceId = tier.stripe_price_id || STRIPE_CONFIG.PRICE_IDS[tier.tier_type]
+    const priceId = tier.stripePriceId || STRIPE_CONFIG.PRICE_IDS[tier.tierType]
     
     if (!priceId) {
       return res.status(400).json({ error: 'Invalid tier configuration' })
@@ -113,7 +121,7 @@ async function checkoutHandler(req, res) {
         userId,
         creatorId,
         tierId,
-        tierType: tier.tier_type
+        tierType: tier.tierType
       },
       subscription_data: {
         metadata: {

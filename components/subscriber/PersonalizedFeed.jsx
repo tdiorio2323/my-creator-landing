@@ -1,10 +1,16 @@
-import { useState } from 'react'
-import { Heart, MessageCircle, Share, Bookmark, Play, Image as ImageIcon, Clock, User } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Heart, MessageCircle, Share, Bookmark, Play, Image as ImageIcon, Clock, User, Lock, Crown } from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
 
 export default function PersonalizedFeed() {
+  const { user } = useAuth()
   const [feedFilter, setFeedFilter] = useState('all')
+  const [feedItems, setFeedItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
 
-  const feedItems = [
+  // Mock data fallback
+  const mockFeedItems = [
     {
       id: 1,
       creator: {
@@ -56,9 +62,69 @@ export default function PersonalizedFeed() {
     }
   ]
 
-  const filteredItems = feedFilter === 'all' 
-    ? feedItems 
+  useEffect(() => {
+    const loadFeed = async () => {
+      try {
+        const response = await fetch(`/api/content/feed?page=${page}&limit=10`)
+
+        if (response.ok) {
+          const data = await response.json()
+
+          // Transform API data to component format
+          const transformedContent = data.content.map(item => ({
+            id: item.id,
+            creator: {
+              name: item.creator.displayName,
+              avatar: item.creator.avatarUrl,
+              tier: item.requiredTier || 'Basic',
+              isVerified: item.creator.isVerified
+            },
+            type: item.contentType.toLowerCase(),
+            title: item.title,
+            description: item.description,
+            thumbnail: item.thumbnailUrl,
+            mediaUrl: item.mediaUrl,
+            duration: item.duration,
+            likes: item.likeCount,
+            comments: item.commentCount,
+            timeAgo: new Date(item.publishedAt).toLocaleDateString(),
+            hasAccess: item.hasAccess,
+            accessRequired: item.accessRequired,
+            isFree: item.isFree,
+            isNew: false // Could calculate based on date
+          }))
+
+          setFeedItems(transformedContent)
+        } else {
+          // Use mock data on API failure
+          setFeedItems(mockFeedItems)
+        }
+      } catch (error) {
+        console.error('Failed to load feed:', error)
+        // Use mock data on error
+        setFeedItems(mockFeedItems)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadFeed()
+  }, [page])
+
+  const filteredItems = feedFilter === 'all'
+    ? feedItems
     : feedItems.filter(item => item.type === feedFilter)
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          <span className="ml-2 text-gray-600">Loading your personalized feed...</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -129,8 +195,23 @@ export default function PersonalizedFeed() {
             {/* Content */}
             <div className="relative">
               <div className="aspect-video bg-gray-100 relative overflow-hidden group cursor-pointer">
+                {/* Background image or placeholder */}
+                {item.thumbnail && (
+                  <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
+                )}
+
                 <div className="absolute inset-0 flex items-center justify-center">
-                  {item.type === 'video' ? (
+                  {!item.hasAccess ? (
+                    // Show lock for restricted content
+                    <div className="text-center text-white">
+                      <Lock className="h-16 w-16 mx-auto mb-2 opacity-80" />
+                      <p className="text-sm font-medium">
+                        {item.accessRequired === 'basic' && 'Basic Subscription Required'}
+                        {item.accessRequired === 'premium' && 'Premium Subscription Required'}
+                        {item.accessRequired === 'vip' && 'VIP Subscription Required'}
+                      </p>
+                    </div>
+                  ) : item.type === 'video' ? (
                     <Play className="h-16 w-16 text-white opacity-80 group-hover:opacity-100 transition-opacity" />
                   ) : item.type === 'photo' ? (
                     <ImageIcon className="h-16 w-16 text-gray-400 group-hover:text-primary-600 transition-colors" />
@@ -144,13 +225,25 @@ export default function PersonalizedFeed() {
 
                 {/* Overlay */}
                 <div className={`absolute inset-0 ${
-                  item.type === 'live' 
-                    ? 'bg-gradient-to-br from-red-500/80 to-pink-500/80' 
-                    : 'bg-black/20 group-hover:bg-black/10'
+                  !item.hasAccess
+                    ? 'bg-black/60'
+                    : item.type === 'live'
+                      ? 'bg-gradient-to-br from-red-500/80 to-pink-500/80'
+                      : 'bg-black/20 group-hover:bg-black/10'
                 } transition-all`} />
 
+                {/* Access indicator badge */}
+                {!item.hasAccess && (
+                  <div className="absolute top-3 left-3">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary-600 text-white">
+                      <Crown className="h-3 w-3 mr-1" />
+                      {item.accessRequired.toUpperCase()}
+                    </span>
+                  </div>
+                )}
+
                 {/* Duration/Time */}
-                {item.duration && (
+                {item.duration && item.hasAccess && (
                   <div className="absolute bottom-3 right-3 bg-black bg-opacity-75 text-white text-sm px-2 py-1 rounded">
                     {item.duration}
                   </div>

@@ -1,0 +1,146 @@
+{
+  "slug": "vrod",
+  "title": "V Rod",
+  "username": "@vrod",
+  "verified": true,
+  "totalFollowers": "994.1k",
+  "profileVisits": "42.6k",
+  "avatar": "https://images.unsplash.com/photo-1494790108755-2616b612b789?w=300&h=300&fit=crop&crop=face",
+  "bgImage": "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1200&h=800&fit=crop",
+  "created": "April 3, 2024",
+  "lastUpdated": "May 12, 2025",
+  "socialPlatforms": [
+    {
+      "platform": "Instagram",
+      "handle": "@vrodmusic",
+      "followers": "9,103",
+      "followersCount": 9103,
+      "url": "https://instagram.com/vrodmusic",
+      "color": "bg-gradient-to-r from-purple-500 to-pink-500",
+      "verified": true
+    },
+    {
+      "platform": "Instagram",
+      "handle": "@vrodlive",
+      "followers": "385,561",
+      "followersCount": 385561,
+      "url": "https://instagram.com/vrodlive",
+      "color": "bg-gradient-to-r from-purple-500 to-pink-500",
+      "verified": true
+    },
+    {
+      "platform": "Twitter",
+      "handle": "@lilveronicar",
+      "followers": "455,212",
+      "followersCount": 455212,
+      "url": "https://twitter.com/lilveronicar",
+      "color": "bg-gradient-to-r from-blue-400 to-blue-600",
+      "verified": true
+    },
+    {
+      "platform": "Facebook",
+      "handle": "teamvrod",
+      "followers": "51,000",
+      "followersCount": 51000,
+      "url": "https://facebook.com/teamvrod",
+      "color": "bg-gradient-to-r from-blue-600 to-blue-800",
+      "verified": false
+    },
+    {
+      "platform": "TikTok",
+      "handle": "@vrodlive",
+      "followers": "10,900",
+      "followersCount": 10900,
+      "url": "https://tiktok.com/@vrodlive",
+      "color": "bg-gradient-to-r from-black to-red-500",
+      "verified": false
+    },
+    {
+      "platform": "YouTube",
+      "handle": "@VRodd",
+      "followers": "43,800",
+      "followersCount": 43800,
+      "url": "https://youtube.com/@VRodd",
+      "color": "bg-gradient-to-r from-red-500 to-red-700",
+      "verified": false
+    },
+    {
+      "platform": "Threads",
+      "handle": "@vrodlive",
+      "followers": "38,571",
+      "followersCount": 38571,
+      "url": "https://threads.net/@vrodlive",
+      "color": "bg-gradient-to-r from-gray-800 to-black",
+      "verified": false
+    }
+  ],
+  "streamingPlatforms": [
+    {
+      "platform": "Spotify",
+      "url": "https://open.spotify.com/artist/vrod",
+      "icon": "🎵",
+      "type": "music"
+    },
+    {
+      "platform": "Apple Music",
+      "url": "https://music.apple.com/artist/vrod",
+      "icon": "🍎",
+      "type": "music"
+    },
+    {
+      "platform": "SoundCloud",
+      "url": "https://soundcloud.com/vrod",
+      "icon": "☁️",
+      "type": "music"
+    },
+    {
+      "platform": "Deezer",
+      "url": "https://deezer.com/artist/vrod",
+      "icon": "🎶",
+      "type": "music"
+    },
+    {
+      "platform": "Tidal",
+      "url": "https://tidal.com/artist/vrod",
+      "icon": "🌊",
+      "type": "music"
+    }
+  ],
+  "exclusivePlatforms": [
+    {
+      "platform": "OnlyFans",
+      "handle": "@lilveronicar",
+      "url": "https://onlyfans.com/lilveronicar",
+      "color": "bg-gradient-to-r from-blue-500 to-cyan-500",
+      "type": "adult",
+      "subscription": true
+    },
+    {
+      "platform": "OnlyFans",
+      "handle": "@lilvrod",
+      "url": "https://onlyfans.com/lilvrod",
+      "color": "bg-gradient-to-r from-blue-500 to-cyan-500",
+      "type": "adult",
+      "subscription": true
+    }
+  ],
+  "analytics": {
+    "totalPlatforms": 12,
+    "totalFollowers": 994147,
+    "engagementRate": "4.2%",
+    "topPlatform": "Twitter",
+    "growthRate": "+12.5%"
+  },
+  "contact": {
+    "email": "contact@vrod.com",
+    "business": "business@vrod.com",
+    "booking": "booking@vrod.com"
+  },
+  "categories": [
+    "Music",
+    "Entertainment",
+    "Adult Content",
+    "Social Media",
+    "Streaming"
+  ]
+}

@@ -1,5 +1,5 @@
 import { stripe } from '../../../lib/stripe'
-import { supabase } from '../../../lib/supabase'
+import { prisma } from '../../../lib/prisma'
 import { validateEnv } from '../../../lib/config'
 
 // Validate environment on module load
@@ -99,31 +99,47 @@ export default async function handler(req, res) {
         const subscription = await stripe.subscriptions.retrieve(session.subscription)
 
         // Create subscription record with conflict resolution
-        const { error: subError } = await supabase
-          .from('subscriptions')
-          .upsert({
-            subscriber_id: userId,
-            creator_id: creatorId,
-            tier_id: tierId,
-            stripe_subscription_id: session.subscription,
-            status: subscription.status,
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-          }, {
-            onConflict: 'subscriber_id,creator_id'
+        try {
+          await prisma.subscription.upsert({
+            where: {
+              subscriberId_creatorId: {
+                subscriberId: userId,
+                creatorId: creatorId
+              }
+            },
+            create: {
+              subscriberId: userId,
+              creatorId: creatorId,
+              tierId: tierId,
+              stripeSubscriptionId: session.subscription,
+              status: subscription.status.toUpperCase(),
+              currentPeriodStart: new Date(subscription.current_period_start * 1000),
+              currentPeriodEnd: new Date(subscription.current_period_end * 1000)
+            },
+            update: {
+              tierId: tierId,
+              stripeSubscriptionId: session.subscription,
+              status: subscription.status.toUpperCase(),
+              currentPeriodStart: new Date(subscription.current_period_start * 1000),
+              currentPeriodEnd: new Date(subscription.current_period_end * 1000)
+            }
           })
-
-        if (subError) {
+        } catch (subError) {
           console.error('Error creating subscription:', subError)
           throw subError
         }
 
         // Update creator subscriber count
-        const { error: countError } = await supabase.rpc('increment_subscriber_count', { 
-          creator_id: creatorId 
-        })
-
-        if (countError) {
+        try {
+          await prisma.creator.update({
+            where: { id: creatorId },
+            data: {
+              subscriberCount: {
+                increment: 1
+              }
+            }
+          })
+        } catch (countError) {
           console.error('Error updating subscriber count:', countError)
         }
 
@@ -133,18 +149,19 @@ export default async function handler(req, res) {
 
       case 'customer.subscription.updated': {
         const subscription = event.data.object
-        
-        const { error } = await supabase
-          .from('subscriptions')
-          .update({
-            status: subscription.status,
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('stripe_subscription_id', subscription.id)
 
-        if (error) {
+        try {
+          await prisma.subscription.updateMany({
+            where: {
+              stripeSubscriptionId: subscription.id
+            },
+            data: {
+              status: subscription.status.toUpperCase(),
+              currentPeriodStart: new Date(subscription.current_period_start * 1000),
+              currentPeriodEnd: new Date(subscription.current_period_end * 1000)
+            }
+          })
+        } catch (error) {
           console.error('Error updating subscription:', error)
           throw error
         }
@@ -155,85 +172,91 @@ export default async function handler(req, res) {
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object
-        
-        // Get subscription details before marking as cancelled
-        const { data: subData, error: getError } = await supabase
-          .from('subscriptions')
-          .select('creator_id, status')
-          .eq('stripe_subscription_id', subscription.id)
-          .single()
 
-        if (getError) {
-          console.error('Error finding subscription to cancel:', getError)
-          break
-        }
-
-        const { error } = await supabase
-          .from('subscriptions')
-          .update({ 
-            status: 'cancelled',
-            updated_at: new Date().toISOString()
+        try {
+          // Get subscription details before marking as cancelled
+          const subData = await prisma.subscription.findFirst({
+            where: {
+              stripeSubscriptionId: subscription.id
+            },
+            select: {
+              creatorId: true,
+              status: true
+            }
           })
-          .eq('stripe_subscription_id', subscription.id)
 
-        if (error) {
+          if (!subData) {
+            console.error('Error finding subscription to cancel:', subscription.id)
+            break
+          }
+
+          await prisma.subscription.updateMany({
+            where: {
+              stripeSubscriptionId: subscription.id
+            },
+            data: {
+              status: 'CANCELLED'
+            }
+          })
+
+          // Only decrement count if subscription was previously active
+          if (subData.status === 'ACTIVE') {
+            await prisma.creator.update({
+              where: { id: subData.creatorId },
+              data: {
+                subscriberCount: {
+                  decrement: 1
+                }
+              }
+            })
+          }
+
+          console.log(`Subscription cancelled: ${subscription.id}`)
+        } catch (error) {
           console.error('Error cancelling subscription:', error)
           throw error
         }
-
-        // Only decrement count if subscription was previously active
-        if (subData && subData.status === 'active') {
-          const { error: countError } = await supabase.rpc('decrement_subscriber_count', { 
-            creator_id: subData.creator_id 
-          })
-
-          if (countError) {
-            console.error('Error updating subscriber count:', countError)
-          }
-        }
-
-        console.log(`Subscription cancelled: ${subscription.id}`)
         break
       }
 
       case 'invoice.payment_failed': {
         const invoice = event.data.object
-        
-        if (invoice.subscription) {
-          const { error } = await supabase
-            .from('subscriptions')
-            .update({ 
-              status: 'past_due',
-              updated_at: new Date().toISOString()
-            })
-            .eq('stripe_subscription_id', invoice.subscription)
 
-          if (error) {
+        if (invoice.subscription) {
+          try {
+            await prisma.subscription.updateMany({
+              where: {
+                stripeSubscriptionId: invoice.subscription
+              },
+              data: {
+                status: 'PAST_DUE'
+              }
+            })
+            console.log(`Subscription marked past due: ${invoice.subscription}`)
+          } catch (error) {
             console.error('Error updating subscription to past_due:', error)
             throw error
           }
-
-          console.log(`Subscription marked past due: ${invoice.subscription}`)
         }
         break
       }
 
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object
-        
-        if (invoice.subscription) {
-          const { error } = await supabase
-            .from('subscriptions')
-            .update({ 
-              status: 'active',
-              updated_at: new Date().toISOString()
-            })
-            .eq('stripe_subscription_id', invoice.subscription)
 
-          if (error) {
-            console.error('Error updating subscription to active:', error)
-          } else {
+        if (invoice.subscription) {
+          try {
+            await prisma.subscription.updateMany({
+              where: {
+                stripeSubscriptionId: invoice.subscription
+              },
+              data: {
+                status: 'ACTIVE'
+              }
+            })
             console.log(`Subscription payment succeeded: ${invoice.subscription}`)
+          } catch (error) {
+            console.error('Error updating subscription to active:', error)
           }
         }
         break

@@ -3,7 +3,6 @@ import Head from 'next/head'
 import Header from '../components/layout/Header'
 import SearchBar from '../components/public/SearchBar'
 import CreatorCard from '../components/creator/CreatorCard'
-import { supabase } from '../lib/supabase'
 import { Grid, List, TrendingUp, Clock, Star } from 'lucide-react'
 
 // Mock data - in real app this would come from API
