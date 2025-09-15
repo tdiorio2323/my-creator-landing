@@ -5,6 +5,9 @@
   "dependencies": {
     "@prisma/client": "^6.16.1",
     "@stripe/stripe-js": "^7.9.0",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/ssr": "^0.7.0",
+    "@supabase/supabase-js": "^2.57.4",
     "autoprefixer": "^10.4.17",
     "aws-sdk": "^2.1692.0",
     "dotenv": "^17.2.2",
