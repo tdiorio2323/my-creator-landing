@@ -1,13 +1,9 @@
-import { uploadFile } from '../../../lib/minio'
 import { prisma } from '../../../lib/prisma'
-import { withRateLimit } from '../../../lib/rateLimit'
-import { validateEnv, APP_CONFIG, STORAGE_CONFIG } from '../../../lib/config'
-import { validateFile } from '../../../lib/storage'
+import { createSupabaseServerClient } from '../../../lib/supabase'
+import { storageHelpers, validateFile } from '../../../lib/storage'
+import { APP_CONFIG, STORAGE_CONFIG } from '../../../lib/config'
 import formidable from 'formidable'
 import { promises as fs } from 'fs'
-
-// Validate environment on module load
-validateEnv()
 
 // Disable default body parser to handle multipart/form-data
 export const config = {
@@ -16,12 +12,30 @@ export const config = {
   },
 }
 
-async function uploadHandler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
   try {
+    // Get user from Supabase auth
+    const supabase = createSupabaseServerClient({ req, res })
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+
+    // Find user in database
+    const dbUser = await prisma.user.findUnique({
+      where: { email: user.email },
+      include: { creator: true }
+    })
+
+    if (!dbUser || !dbUser.creator) {
+      return res.status(403).json({ error: 'Creator profile required' })
+    }
+
     // Parse multipart form data
     const form = formidable({
       maxFileSize: APP_CONFIG.MAX_FILE_SIZE,
@@ -30,121 +44,128 @@ async function uploadHandler(req, res) {
 
     const [fields, files] = await form.parse(req)
 
-    const { userId, creatorId, title, description, contentType, requiredTier, isFree } = fields
-    const file = files.file?.[0]
+    const title = Array.isArray(fields.title) ? fields.title[0] : fields.title
+    const description = Array.isArray(fields.description) ? fields.description[0] : fields.description
+    const contentType = Array.isArray(fields.contentType) ? fields.contentType[0] : fields.contentType
+    const requiredTier = Array.isArray(fields.requiredTier) ? fields.requiredTier[0] : fields.requiredTier
+    const isFree = Array.isArray(fields.isFree) ? fields.isFree[0] === 'true' : fields.isFree === 'true'
+    const price = Array.isArray(fields.price) ? parseFloat(fields.price[0]) : parseFloat(fields.price)
 
-    // Validate required fields
-    if (!userId?.[0] || !creatorId?.[0] || !title?.[0] || !file) {
-      return res.status(400).json({ 
-        error: 'Missing required fields: userId, creatorId, title, file' 
-      })
+    if (!title) {
+      return res.status(400).json({ error: 'Title is required' })
     }
 
-    // Validate user is the creator
-    const creator = await prisma.creator.findFirst({
-      where: {
-        id: creatorId[0],
-        userId: userId[0]
-      },
-      select: {
-        id: true
+    let mediaUrl = null
+    let thumbnailUrl = null
+    let finalContentType = 'TEXT'
+    let duration = null
+
+    // Handle file uploads
+    if (files.media) {
+      const mediaFile = Array.isArray(files.media) ? files.media[0] : files.media
+
+      // Determine content type based on file
+      if (mediaFile.mimetype?.startsWith('video/')) {
+        finalContentType = 'VIDEO'
+        duration = 0 // Placeholder - would use video analysis service
+      } else if (mediaFile.mimetype?.startsWith('image/')) {
+        finalContentType = 'PHOTO'
       }
-    })
 
-    if (!creator) {
-      return res.status(403).json({ error: 'Unauthorized: Not the creator' })
+      // Validate file
+      const validation = validateFile(mediaFile)
+      if (!validation.valid) {
+        return res.status(400).json({ error: validation.error })
+      }
+
+      // Read file data
+      const fileData = await fs.readFile(mediaFile.filepath)
+      const fileName = mediaFile.originalFilename || `content_${Date.now()}`
+
+      // Upload to Supabase Storage
+      const filePath = storageHelpers.generateFilePath(dbUser.id, 'content', fileName)
+      const uploadResult = await storageHelpers.uploadFile(
+        STORAGE_CONFIG.BUCKETS.CREATOR_CONTENT,
+        filePath,
+        fileData
+      )
+
+      if (uploadResult.error) {
+        throw new Error(`Upload failed: ${uploadResult.error.message}`)
+      }
+
+      mediaUrl = filePath
+
+      // Clean up temporary file
+      try {
+        await fs.unlink(mediaFile.filepath)
+      } catch (cleanupError) {
+        console.warn('Failed to cleanup temp file:', cleanupError)
+      }
     }
 
-    // Validate file type
-    const isImage = contentType?.[0] === 'photo'
-    const isVideo = contentType?.[0] === 'video'
-    
-    let allowedTypes = []
-    if (isImage) {
-      allowedTypes = APP_CONFIG.ALLOWED_FILE_TYPES.images
-    } else if (isVideo) {
-      allowedTypes = APP_CONFIG.ALLOWED_FILE_TYPES.videos
-    } else {
-      return res.status(400).json({ error: 'Invalid content type' })
+    // Handle thumbnail upload
+    if (files.thumbnail) {
+      const thumbnailFile = Array.isArray(files.thumbnail) ? files.thumbnail[0] : files.thumbnail
+      const thumbnailData = await fs.readFile(thumbnailFile.filepath)
+      const thumbnailName = thumbnailFile.originalFilename || `thumb_${Date.now()}`
+
+      const thumbPath = storageHelpers.generateFilePath(dbUser.id, 'thumbnails', thumbnailName)
+      const thumbUpload = await storageHelpers.uploadFile(
+        STORAGE_CONFIG.BUCKETS.CREATOR_THUMBS,
+        thumbPath,
+        thumbnailData
+      )
+
+      if (!thumbUpload.error) {
+        thumbnailUrl = storageHelpers.getPublicUrl(STORAGE_CONFIG.BUCKETS.CREATOR_THUMBS, thumbPath)
+      }
+
+      // Clean up temp file
+      try {
+        await fs.unlink(thumbnailFile.filepath)
+      } catch (cleanupError) {
+        console.warn('Failed to cleanup thumbnail temp file:', cleanupError)
+      }
     }
 
-    const validation = validateFile(file, allowedTypes, APP_CONFIG.MAX_FILE_SIZE)
-    if (!validation.valid) {
-      return res.status(400).json({ error: validation.error })
-    }
-
-    // Generate unique file path
-    const timestamp = Date.now()
-    const extension = file.originalFilename?.split('.').pop() || 'bin'
-    const filePath = `${creatorId[0]}/${timestamp}-${file.newFilename || 'content'}.${extension}`
-
-    // Read file buffer
-    const fileBuffer = await fs.readFile(file.filepath)
-    const fileObj = new File([fileBuffer], file.originalFilename || 'content', { 
-      type: file.mimetype 
-    })
-
-    // Upload to MinIO Storage
-    const uploadResult = await uploadFile(fileObj, filePath)
-
-    if (!uploadResult.success) {
-      return res.status(500).json({ error: uploadResult.error })
-    }
-
-    // TODO: Generate thumbnail for videos/images
-    // For now, use a placeholder or the same file path
-    const thumbnailPath = uploadResult.key
-
-    // Create content record in database
+    // Create content in database
     const content = await prisma.content.create({
       data: {
-        creatorId: creatorId[0],
-        title: title[0],
-        description: description?.[0] || null,
-        contentType: contentType[0].toUpperCase(),
-        mediaUrl: uploadResult.key,
-        thumbnailUrl: thumbnailPath,
-        requiredTier: requiredTier?.[0]?.toUpperCase() || 'BASIC',
-        isFree: isFree?.[0] === 'true',
+        creatorId: dbUser.creator.id,
+        title,
+        description,
+        contentType: finalContentType,
+        mediaUrl,
+        thumbnailUrl,
+        duration,
+        requiredTier: requiredTier || 'BASIC',
+        isFree: isFree || false,
+        price: !isFree && price ? price : null,
         publishedAt: new Date()
-      },
-      select: {
-        id: true,
-        title: true,
-        contentType: true,
-        createdAt: true
       }
     })
-
-    // Clean up temporary file
-    try {
-      await fs.unlink(file.filepath)
-    } catch (cleanupError) {
-      console.warn('Failed to cleanup temp file:', cleanupError)
-    }
 
     return res.status(201).json({
       success: true,
       content: {
         id: content.id,
         title: content.title,
+        description: content.description,
         contentType: content.contentType,
-        createdAt: content.createdAt
+        thumbnailUrl: content.thumbnailUrl,
+        requiredTier: content.requiredTier,
+        isFree: content.isFree,
+        price: content.price,
+        publishedAt: content.publishedAt
       }
     })
 
   } catch (error) {
-    console.error('Upload handler error:', error)
-    
-    const message = process.env.NODE_ENV === 'development' 
-      ? error.message 
-      : 'Upload failed'
-      
-    return res.status(500).json({ error: message })
+    console.error('Content upload error:', error)
+    return res.status(500).json({
+      error: 'Failed to upload content',
+      details: error.message
+    })
   }
 }
-
-export default withRateLimit(uploadHandler, { 
-  max: 20, // 20 uploads per window
-  windowMs: 60 * 60 * 1000 // 1 hour
-})

@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import Header from '../../components/layout/Header'
 import Sidebar from '../../components/layout/Sidebar'
-import { useAuth } from '../../contexts/AuthContext'
+import { authHelpers } from '../../lib/supabase'
 import {
   TrendingUp,
   Users,
@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 
 export default function CreatorDashboard() {
-  const { user } = useAuth()
+  const [user, setUser] = useState(null)
   const router = useRouter()
   
   const [creator, setCreator] = useState(null)
@@ -38,10 +38,23 @@ export default function CreatorDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!user) {
-      router.push('/auth/login')
-      return
+    // Check authentication and load user
+    const checkAuth = async () => {
+      const { user, error } = await authHelpers.getUser()
+
+      if (error || !user) {
+        router.push('/auth/login')
+        return
+      }
+
+      setUser(user)
     }
+
+    checkAuth()
+  }, [router])
+
+  useEffect(() => {
+    if (!user) return
 
     // Load real data from API
     const loadDashboardData = async () => {

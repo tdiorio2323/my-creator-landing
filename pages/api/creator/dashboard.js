@@ -1,5 +1,5 @@
 import { prisma } from '../../../lib/prisma'
-import { getSessionUserId } from '../../../lib/supertokens'
+import { createSupabaseServerClient } from '../../../lib/supabase'
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -7,14 +7,34 @@ export default async function handler(req, res) {
   }
 
   try {
-    const userId = await getSessionUserId(req)
-    if (!userId) {
-      return res.status(401).json({ error: 'Not authenticated' })
+    // Get user from Supabase auth
+    const supabase = createSupabaseServerClient({ req, res })
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+
+    // Find or create user in our database
+    let dbUser = await prisma.user.findUnique({
+      where: { email: user.email }
+    })
+
+    if (!dbUser) {
+      // Create user if doesn't exist
+      dbUser = await prisma.user.create({
+        data: {
+          email: user.email,
+          fullName: user.user_metadata?.full_name || user.email.split('@')[0],
+          role: 'CREATOR',
+          avatarUrl: user.user_metadata?.avatar_url
+        }
+      })
     }
 
     // Get creator profile
-    const creator = await prisma.creator.findUnique({
-      where: { userId },
+    let creator = await prisma.creator.findUnique({
+      where: { userId: dbUser.id },
       include: {
         user: {
           select: {
@@ -26,8 +46,25 @@ export default async function handler(req, res) {
       }
     })
 
+    // Create creator profile if doesn't exist
     if (!creator) {
-      return res.status(404).json({ error: 'Creator profile not found' })
+      creator = await prisma.creator.create({
+        data: {
+          userId: dbUser.id,
+          displayName: dbUser.fullName || dbUser.email.split('@')[0],
+          description: 'Welcome to my creator page!',
+          category: 'General'
+        },
+        include: {
+          user: {
+            select: {
+              fullName: true,
+              email: true,
+              avatarUrl: true
+            }
+          }
+        }
+      })
     }
 
     // Get subscription stats

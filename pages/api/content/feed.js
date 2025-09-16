@@ -1,6 +1,7 @@
 import { prisma } from '../../../lib/prisma'
-import { getSessionUserId } from '../../../lib/supertokens'
-import { canAccessContent } from '../../../lib/access'
+import { createSupabaseServerClient } from '../../../lib/supabase'
+import { storageHelpers } from '../../../lib/storage'
+import { STORAGE_CONFIG } from '../../../lib/config'
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -8,8 +9,32 @@ export default async function handler(req, res) {
   }
 
   try {
-    const userId = await getSessionUserId(req)
-    const { page = 1, limit = 20, creatorId, category, tier } = req.query
+    const { creatorId, page = 1, limit = 10, tier = 'all' } = req.query
+
+    // Get user from Supabase auth (optional for feed)
+    const supabase = createSupabaseServerClient({ req, res })
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    let currentUserSubscription = null
+    let dbUser = null
+    if (user && !authError) {
+      // Find user's subscription status
+      dbUser = await prisma.user.findUnique({
+        where: { email: user.email }
+      })
+
+      if (dbUser && creatorId) {
+        currentUserSubscription = await prisma.subscription.findUnique({
+          where: {
+            subscriberId_creatorId: {
+              subscriberId: dbUser.id,
+              creatorId: creatorId
+            }
+          },
+          include: { tier: true }
+        })
+      }
+    }
 
     const skip = (page - 1) * limit
 
