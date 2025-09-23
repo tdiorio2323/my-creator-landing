@@ -219,4 +219,5 @@ enum TierType {
   BASIC
   PREMIUM
   VIP
+  ULTRA
 }

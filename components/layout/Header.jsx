@@ -42,6 +42,9 @@ export default function Header() {
             <Link href="/categories" className="nav-link">
               Categories
             </Link>
+            <Link href="/legal" className="nav-link">
+              Legal
+            </Link>
             <div className="w-px h-6 bg-luxury-300 mx-4" />
             <Link href="/premium" className="nav-link text-primary-600 font-semibold">
               <Crown className="w-4 h-4 mr-1 inline" />

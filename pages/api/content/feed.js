@@ -1,7 +1,6 @@
 import { prisma } from '../../../lib/prisma'
 import { createSupabaseServerClient } from '../../../lib/supabase'
-import { storageHelpers } from '../../../lib/storage'
-import { STORAGE_CONFIG } from '../../../lib/config'
+import { canAccessContent } from '../../../lib/access'
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -9,7 +8,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { creatorId, page = 1, limit = 10, tier = 'all' } = req.query
+    const { creatorId, category, page = 1, limit = 10, tier = 'all' } = req.query
 
     // Get user from Supabase auth (optional for feed)
     const supabase = createSupabaseServerClient({ req, res })
@@ -17,11 +16,13 @@ export default async function handler(req, res) {
 
     let currentUserSubscription = null
     let dbUser = null
+    let userId = null
     if (user && !authError) {
       // Find user's subscription status
       dbUser = await prisma.user.findUnique({
         where: { email: user.email }
       })
+      userId = dbUser?.id || null
 
       if (dbUser && creatorId) {
         currentUserSubscription = await prisma.subscription.findUnique({
@@ -49,19 +50,6 @@ export default async function handler(req, res) {
       })
     }
 
-    // If user is authenticated, prioritize content from their subscriptions
-    let priorityCreatorIds = []
-    if (userId) {
-      const subscriptions = await prisma.subscription.findMany({
-        where: {
-          subscriberId: userId,
-          status: 'ACTIVE'
-        },
-        select: { creatorId: true }
-      })
-      priorityCreatorIds = subscriptions.map(sub => sub.creatorId)
-    }
-
     // Get content with creator info
     const content = await prisma.content.findMany({
       where,
@@ -77,13 +65,7 @@ export default async function handler(req, res) {
           }
         }
       },
-      orderBy: [
-        // Prioritize content from subscribed creators
-        ...(priorityCreatorIds.length > 0 ? [{
-          creatorId: { in: priorityCreatorIds }
-        }] : []),
-        { publishedAt: 'desc' }
-      ],
+      orderBy: { publishedAt: 'desc' },
       skip,
       take: parseInt(limit)
     })

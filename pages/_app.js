@@ -1,6 +1,7 @@
 import '../styles/globals.css'
 import { Inter } from 'next/font/google'
 import { AuthProvider } from '../contexts/AuthContext'
+import DefaultLayout from '../components/layout/DefaultLayout'
 import { useEffect } from 'react'
 
 // SuperTokens imports
@@ -36,7 +37,9 @@ export default function App({ Component, pageProps }) {
   return (
     <AuthProvider>
       <main className={inter.className}>
-        <Component {...pageProps} />
+        <DefaultLayout>
+          <Component {...pageProps} />
+        </DefaultLayout>
       </main>
     </AuthProvider>
   )

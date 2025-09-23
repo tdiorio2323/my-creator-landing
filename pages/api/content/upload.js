@@ -73,9 +73,10 @@ export default async function handler(req, res) {
       }
 
       // Validate file
-      const validation = validateFile(mediaFile)
-      if (!validation.valid) {
-        return res.status(400).json({ error: validation.error })
+      try {
+        validateFile(mediaFile)
+      } catch (e) {
+        return res.status(400).json({ error: e.message || 'Invalid file' })
       }
 
       // Read file data

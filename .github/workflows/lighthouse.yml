@@ -1,0 +1,74 @@
+name: Lighthouse
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Chrome (Puppeteer)
+        run: npx -y @puppeteer/browsers install chrome
+
+      - name: Build Next app
+        run: npm run build
+
+      - name: Start server
+        run: |
+          nohup npm start -- -p 3000 >/dev/null 2>&1 &
+          for i in {1..60}; do
+            if curl -sSf http://localhost:3000 >/dev/null; then echo "Server up"; break; fi
+            sleep 1
+          done
+
+      - name: Prepare artifacts dir
+        run: mkdir -p .artifacts
+
+      - name: Run Lighthouse (performance only)
+        run: |
+          npx lighthouse http://localhost:3000 \
+            --only-categories=performance \
+            --preset=desktop \
+            --throttling-method=provided \
+            --max-wait-for-load=60000 \
+            --output=json \
+            --output-path=.artifacts/lhr
+
+      - name: Print score
+        run: node scripts/print-lhr-score.cjs
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report
+          path: .artifacts/
+
+      - name: Run Lighthouse (block third-party, fallback)
+        if: failure()
+        run: |
+          npx lighthouse http://localhost:3000 \
+            --only-categories=performance \
+            --blocked-url-patterns="https://fonts.googleapis.com/*,https://fonts.gstatic.com/*,https://cdn.builder.io/*" \
+            --output=json --output-path=.artifacts/lhr-blocked
+
+      - name: Upload fallback report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report-blocked
+          path: .artifacts/
+

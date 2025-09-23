@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Heart, MessageCircle, Share, Bookmark, Play, Image as ImageIcon, Clock, User, Lock, Crown } from 'lucide-react'
+import Image from 'next/image'
 import { useAuth } from '../../contexts/AuthContext'
 
 export default function PersonalizedFeed() {
@@ -197,7 +198,14 @@ export default function PersonalizedFeed() {
               <div className="aspect-video bg-gray-100 relative overflow-hidden group cursor-pointer">
                 {/* Background image or placeholder */}
                 {item.thumbnail && (
-                  <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
+                  <Image
+                    src={item.thumbnail}
+                    alt={item.title}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 66vw, 50vw"
+                    priority={false}
+                  />
                 )}
 
                 <div className="absolute inset-0 flex items-center justify-center">

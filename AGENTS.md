@@ -1,48 +1,41 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `pages/`: Next.js Pages Router (e.g., `pages/index.js`, `pages/_app.js`, `pages/creator/[id].js`).
-- `components/`: Reusable UI (e.g., `components/layout/Header.jsx`, `components/public/Hero.jsx`).
-- `styles/`: Global styles and Tailwind entry (`styles/globals.css`).
-- `public/`: Static assets served from `/` (e.g., `/favicon.ico`, `/manifest.json`).
-- `src/`: Legacy CRA/Vite artifacts (`src/App.js`, tests). Not used by Next.js runtime; avoid changes unless migrating.
-- Root config: `next.config.js`, `tailwind.config.js`, `postcss.config.js`, `vite.config.js` (legacy), `index.html` (legacy).
- - `legacy/`: Archived CRA/Vite files moved out of the runtime (e.g., `legacy/src/*`, `legacy/index.html`, `legacy/vite.config.js`).
+- Next.js Pages Router lives in `pages/` (e.g., `pages/index.js`, `pages/_app.js`). Dynamic routes under folders like `pages/creator/[id].js`.
+- Reusable UI in `components/` (e.g., `components/layout/Header.jsx`, `components/public/Hero.jsx`).
+- Global styles in `styles/globals.css` (Tailwind entry). Static assets in `public/` (e.g., `/favicon.ico`, `/manifest.json`).
+- Legacy CRA/Vite artifacts in `src/` and `legacy/`; not used at runtime. Avoid edits unless migrating.
+- Root config: `next.config.js`, `tailwind.config.js`, `postcss.config.js`. Legacy: `vite.config.js`, `index.html`.
 
 ## Build, Test, and Development Commands
-- Install deps: `npm install` (Node 18+).
-- Dev server: `npm run dev` → runs `next dev` at http://localhost:3000.
-- Build: `npm run build` → runs `next build`.
-- Start prod: `npm start` → runs `next start` (after build).
-- Lint: `npm run lint` → Next.js ESLint rules (`eslint-config-next`).
+- `npm install` — install dependencies (Node 18+).
+- `npm run dev` — start Next dev server at http://localhost:3000.
+- `npm run build` — production build via `next build`.
+- `npm start` — serve built app with `next start`.
+- `npm run lint` — run ESLint with `eslint-config-next`.
 
 ## Coding Style & Naming Conventions
-- Language: JavaScript/JSX. Use 2‑space indentation.
-- Components: `PascalCase.jsx` (e.g., `CreatorProfile.jsx`). Utilities/hooks: `camelCase.js`.
-- Imports: Use clear relative paths (no path aliases configured).
-- Quality: Fix ESLint issues before commit; keep components small and composable.
+- Language: JavaScript/JSX with 2‑space indentation.
+- Components use `PascalCase.jsx` (e.g., `CreatorProfile.jsx`). Utilities/hooks use `camelCase.js`.
+- Use clear relative imports (no path aliases). Keep components small and composable.
+- Fix ESLint warnings before commit; prefer simple, focused diffs.
 
 ## Testing Guidelines
-- Current state: No configured test runner. Legacy Jest files exist under `src/` but are not wired.
-- If adding tests: Use Jest + React Testing Library; name files `*.test.js` colocated or under `__tests__/`.
-- Keep tests deterministic and offline; target critical UI and utils first.
+- No test runner is currently wired. Legacy Jest files may exist under `src/`.
+- If adding tests, use Jest + React Testing Library; name files `*.test.js` colocated or under `__tests__/`. Keep tests deterministic and offline.
 
 ## Commit & Pull Request Guidelines
-- Commits: Use Conventional Commits (e.g., `feat(dashboard): add analytics card`).
-- PRs: Include a concise description, linked issues, screenshots for UI changes, and verification steps.
-- Gate: Lint must pass; ensure build succeeds locally before requesting review.
+- Commits follow Conventional Commits, e.g., `feat(dashboard): add analytics card`.
+- PRs include: concise description, linked issues, and screenshots/GIFs for UI changes.
+- Gate: `npm run lint` must pass and `npm run build` should succeed locally before review.
 
 ## Security & Configuration Tips
-- Do not commit secrets. Use `.env.local`; see `.env.example` for required vars.
-- Rotate exposed keys immediately and redeploy.
+- Never commit secrets. Use `.env.local`; see `.env.example` for required vars. Rotate exposed keys immediately and redeploy.
 
-## Migration Checklist (Legacy CRA/Vite)
-- Move any remaining UI from `src/` into `pages/` and `components/`.
-- Replace Vite/CRA-specific imports with Next-compatible ones; serve assets from `public/`.
-- Legacy files have been relocated to `legacy/` for reference; delete once migration is complete.
-- Update imports to correct relative paths; verify with `npm run lint`.
-- Validate pages with `npm run dev`, then `npm run build`.
+## Migration Notes (Legacy CRA/Vite)
+- Move any remaining UI from `src/` into `pages/`/`components/` and serve assets from `public/`.
+- Replace Vite/CRA-specific imports with Next-compatible ones; update relative paths. Validate with `npm run dev`, then `npm run build`.
 
-## Agent-Specific Notes
-- Prefer surgical changes aligned to the Pages Router structure. Avoid editing `src/` or Vite artifacts unless migrating.
-- When explaining changes, reference exact paths and npm scripts for reproducibility.
+## Agent-Specific Instructions
+- Prefer surgical changes aligned to the Pages Router. Avoid editing `src/` or Vite artifacts unless migrating. Reference exact paths and npm scripts in explanations.
+
