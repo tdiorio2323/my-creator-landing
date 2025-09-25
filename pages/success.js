@@ -15,6 +15,11 @@ export default function SuccessPage() {
   const [subscription, setSubscription] = useState(null)
   const [creator, setCreator] = useState(null)
 
+  const formatPrice = (price) => {
+    if (typeof price === 'number') return price.toFixed(2)
+    return price || '--'
+  }
+
   useEffect(() => {
     if (!user || !session_id) return
 
@@ -29,15 +34,21 @@ export default function SuccessPage() {
           const response = await fetch('/api/user/subscription-status')
 
           if (response.ok) {
-            const data = await response.json()
-            setSubscription(data)
-            setCreator(data.creator)
-            setStatus('success')
-            return true
+            const { subscriptions = [] } = await response.json()
+            const latestSubscription = subscriptions[0] || null
+
+            if (latestSubscription) {
+              setSubscription(latestSubscription)
+              setCreator(latestSubscription.creator)
+              setStatus('success')
+              return true
+            }
           }
 
           attempts++
           if (attempts >= maxAttempts) {
+            setSubscription(null)
+            setCreator(null)
             setStatus('pending')
             return false
           }
@@ -102,16 +113,18 @@ export default function SuccessPage() {
                 Welcome to the community! 🎉
               </h1>
               <p className="text-lg text-gray-600 mb-6">
-                Your subscription to {creator?.displayName || 'the creator'} is now active
+                Your subscription to {creator?.displayName || creator?.display_name || 'the creator'} is now active
               </p>
-              
+
               {subscription && (
                 <div className="bg-gray-50 rounded-lg p-6 mb-6">
                   <h3 className="font-semibold text-gray-900 mb-2">Subscription Details</h3>
                   <div className="text-sm text-gray-600 space-y-1">
                     <p><span className="font-medium">Tier:</span> {subscription.tier?.name}</p>
-                    <p><span className="font-medium">Price:</span> ${subscription.tier?.price}/month</p>
-                    <p><span className="font-medium">Next billing:</span> {new Date(subscription.currentPeriodEnd).toLocaleDateString()}</p>
+                    <p><span className="font-medium">Price:</span> ${formatPrice(subscription.tier?.price)}/month</p>
+                    {subscription.currentPeriodEnd && (
+                      <p><span className="font-medium">Next billing:</span> {new Date(subscription.currentPeriodEnd).toLocaleDateString()}</p>
+                    )}
                   </div>
                 </div>
               )}
