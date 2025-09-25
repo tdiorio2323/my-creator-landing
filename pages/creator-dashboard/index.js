@@ -19,6 +19,36 @@ import {
   Crown
 } from 'lucide-react'
 
+const MOCK_RECENT_CONTENT = [
+  {
+    id: 1,
+    title: 'Morning Yoga Flow',
+    type: 'video',
+    views: 1230,
+    likes: 89,
+    revenue: 245.6,
+    publishedAt: '2 hours ago'
+  },
+  {
+    id: 2,
+    title: 'Healthy Breakfast Ideas',
+    type: 'photo',
+    views: 856,
+    likes: 67,
+    revenue: 156.8,
+    publishedAt: '1 day ago'
+  },
+  {
+    id: 3,
+    title: 'Live Q&A Session',
+    type: 'live',
+    views: 2100,
+    likes: 234,
+    revenue: 890.4,
+    publishedAt: '3 days ago'
+  }
+]
+
 export default function CreatorDashboard() {
   const [user, setUser] = useState(null)
   const router = useRouter()
@@ -65,7 +95,7 @@ export default function CreatorDashboard() {
           const data = await response.json()
           setCreator(data.creator)
           setStats(data.stats)
-          setRecentContent(data.recentContent || mockRecentContent)
+          setRecentContent(data.recentContent || MOCK_RECENT_CONTENT)
         } else if (response.status === 404) {
           // Creator profile not found, use mock data for demo
           setStats({
@@ -78,7 +108,7 @@ export default function CreatorDashboard() {
             contentCount: 127,
             averageRating: 4.8
           })
-          setRecentContent(mockRecentContent)
+          setRecentContent(MOCK_RECENT_CONTENT)
           setCreator({ id: 'demo', displayName: user?.email || 'Demo Creator' })
         } else {
           throw new Error('Failed to fetch dashboard data')
@@ -96,7 +126,7 @@ export default function CreatorDashboard() {
           contentCount: 127,
           averageRating: 4.8
         })
-        setRecentContent(mockRecentContent)
+        setRecentContent(MOCK_RECENT_CONTENT)
         setCreator({ id: 'demo', displayName: user?.email || 'Demo Creator' })
       } finally {
         setLoading(false)
@@ -107,36 +137,6 @@ export default function CreatorDashboard() {
   }, [user, router])
 
   // Mock data for the rest of the component
-  const mockRecentContent = [
-    {
-      id: 1,
-      title: "Morning Yoga Flow",
-      type: "video",
-      views: 1230,
-      likes: 89,
-      revenue: 245.60,
-      publishedAt: "2 hours ago"
-    },
-    {
-      id: 2,
-      title: "Healthy Breakfast Ideas",
-      type: "photo",
-      views: 856,
-      likes: 67,
-      revenue: 156.80,
-      publishedAt: "1 day ago"
-    },
-    {
-      id: 3,
-      title: "Live Q&A Session",
-      type: "live",
-      views: 2100,
-      likes: 234,
-      revenue: 890.40,
-      publishedAt: "3 days ago"
-    }
-  ]
-
   return (
     <>
       <Head>
@@ -307,7 +307,7 @@ export default function CreatorDashboard() {
                 </div>
 
                 <div className="space-y-4">
-                  {mockRecentContent.map((content, index) => (
+                {MOCK_RECENT_CONTENT.map((content, index) => (
                     <div key={content.id} className="glass-card p-6 hover-lift group">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">

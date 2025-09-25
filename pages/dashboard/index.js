@@ -7,6 +7,12 @@ import PersonalizedFeed from '../../components/subscriber/PersonalizedFeed'
 import { useAuth } from '../../contexts/AuthContext'
 import { Bell, TrendingUp, Users, Heart, CreditCard } from 'lucide-react'
 
+const SUGGESTED_CREATORS = [
+  { name: 'Ava Hart', subtitle: 'Wellness & Lifestyle', subscribers: '42k subscribers' },
+  { name: 'Leo Turner', subtitle: 'Tech & Gadgets', subscribers: '31k subscribers' },
+  { name: 'Maya Chen', subtitle: 'Art & Illustration', subscribers: '28k subscribers' }
+]
+
 export default function Dashboard() {
   const { user } = useAuth()
   const router = useRouter()
@@ -197,15 +203,15 @@ export default function Dashboard() {
                   Suggested for You
                 </h3>
                 <div className="space-y-3">
-                  {[1, 2, 3].map((item) => (
-                    <div key={item} className="flex items-center space-x-3">
+                  {SUGGESTED_CREATORS.map((creator) => (
+                    <div key={creator.name} className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-pink-400 rounded-full flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">
-                          New Creator {item}
+                          {creator.name}
                         </p>
                         <p className="text-xs text-gray-600">
-                          {Math.floor(Math.random() * 50 + 10)}k subscribers
+                          {creator.subscribers}
                         </p>
                       </div>
                       <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">

@@ -3,65 +3,64 @@ import { Heart, MessageCircle, Share, Bookmark, Play, Image as ImageIcon, Clock,
 import Image from 'next/image'
 import { useAuth } from '../../contexts/AuthContext'
 
+const MOCK_FEED_ITEMS = [
+  {
+    id: 1,
+    creator: {
+      name: 'Sarah Johnson',
+      avatar: '/api/placeholder/40/40',
+      tier: 'Premium'
+    },
+    type: 'video',
+    title: 'Morning Yoga Flow for Beginners',
+    description: 'Start your day with this energizing 20-minute yoga sequence perfect for all levels.',
+    thumbnail: '/api/placeholder/600/400',
+    duration: '20:15',
+    likes: 234,
+    comments: 18,
+    timeAgo: '2 hours ago',
+    isNew: true
+  },
+  {
+    id: 2,
+    creator: {
+      name: 'Mike Chen',
+      avatar: '/api/placeholder/40/40',
+      tier: 'VIP'
+    },
+    type: 'photo',
+    title: 'Behind the Scenes: Kitchen Setup',
+    description: 'Take a look at my professional kitchen setup and the tools I use daily.',
+    thumbnail: '/api/placeholder/600/400',
+    likes: 156,
+    comments: 24,
+    timeAgo: '4 hours ago',
+    isNew: false
+  },
+  {
+    id: 3,
+    creator: {
+      name: 'Emma Wilson',
+      avatar: '/api/placeholder/40/40',
+      tier: 'Premium'
+    },
+    type: 'live',
+    title: 'Live Art Session - Digital Portraits',
+    description: 'Join me live as I create a digital portrait from start to finish!',
+    thumbnail: '/api/placeholder/600/400',
+    likes: 89,
+    comments: 45,
+    timeAgo: 'Live now',
+    isLive: true
+  }
+]
+
 export default function PersonalizedFeed() {
   const { user } = useAuth()
   const [feedFilter, setFeedFilter] = useState('all')
   const [feedItems, setFeedItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
-
-  // Mock data fallback
-  const mockFeedItems = [
-    {
-      id: 1,
-      creator: {
-        name: "Sarah Johnson",
-        avatar: "/api/placeholder/40/40",
-        tier: "Premium"
-      },
-      type: "video",
-      title: "Morning Yoga Flow for Beginners",
-      description: "Start your day with this energizing 20-minute yoga sequence perfect for all levels.",
-      thumbnail: "/api/placeholder/600/400",
-      duration: "20:15",
-      likes: 234,
-      comments: 18,
-      timeAgo: "2 hours ago",
-      isNew: true
-    },
-    {
-      id: 2,
-      creator: {
-        name: "Mike Chen",
-        avatar: "/api/placeholder/40/40",
-        tier: "VIP"
-      },
-      type: "photo",
-      title: "Behind the Scenes: Kitchen Setup",
-      description: "Take a look at my professional kitchen setup and the tools I use daily.",
-      thumbnail: "/api/placeholder/600/400",
-      likes: 156,
-      comments: 24,
-      timeAgo: "4 hours ago",
-      isNew: false
-    },
-    {
-      id: 3,
-      creator: {
-        name: "Emma Wilson",
-        avatar: "/api/placeholder/40/40",
-        tier: "Premium"
-      },
-      type: "live",
-      title: "Live Art Session - Digital Portraits",
-      description: "Join me live as I create a digital portrait from start to finish!",
-      thumbnail: "/api/placeholder/600/400",
-      likes: 89,
-      comments: 45,
-      timeAgo: "Live now",
-      isLive: true
-    }
-  ]
 
   useEffect(() => {
     const loadFeed = async () => {
@@ -98,12 +97,12 @@ export default function PersonalizedFeed() {
           setFeedItems(transformedContent)
         } else {
           // Use mock data on API failure
-          setFeedItems(mockFeedItems)
+          setFeedItems(MOCK_FEED_ITEMS)
         }
       } catch (error) {
         console.error('Failed to load feed:', error)
         // Use mock data on error
-        setFeedItems(mockFeedItems)
+        setFeedItems(MOCK_FEED_ITEMS)
       } finally {
         setLoading(false)
       }

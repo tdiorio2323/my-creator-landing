@@ -3,16 +3,45 @@ import { useAuth } from '../../contexts/AuthContext'
 import { Users, Star, Heart, Share, MessageCircle, Gift, Play, Image as ImageIcon, Lock, Calendar } from 'lucide-react'
 import SubscriptionTiers from './SubscriptionTiers'
 
+const PLACEHOLDER_CONTENT = [
+  { price: '12.00', likes: 320, comments: 28, publishedAgo: '2 days ago' },
+  { price: '18.00', likes: 285, comments: 24, publishedAgo: '4 days ago' },
+  { price: '24.00', likes: 198, comments: 19, publishedAgo: '1 week ago' },
+  { price: '15.00', likes: 256, comments: 21, publishedAgo: '9 days ago' }
+]
+
+const PLACEHOLDER_SIMILAR_CREATORS = [
+  { name: 'Ava Hart', subscribers: '42k subscribers' },
+  { name: 'Lena Fox', subscribers: '38k subscribers' },
+  { name: 'Maya Chen', subscribers: '33k subscribers' }
+]
+
 export default function CreatorProfile({ creator }) {
   const [activeTab, setActiveTab] = useState('posts')
   const [userSubscriptions, setUserSubscriptions] = useState([])
   const [loadingSubscriptions, setLoadingSubscriptions] = useState(true)
   const { user } = useAuth()
 
+  const displayName = creator.profile?.full_name || creator.name || creator.display_name || 'Creator'
+  const category = creator.category || 'Premium Creator'
+  const bio = creator.profile?.bio || creator.bio || 'Exclusive premium experiences crafted for you.'
+  const stats = {
+    subscribers: creator.subscribers ?? '—',
+    rating: creator.rating ?? '5.0',
+    likes: creator.likes ?? '—',
+    joinDate: creator.joinDate || '2024'
+  }
+  const tabConfig = [
+    { id: 'posts', label: 'Posts', count: creator.postCount ?? creator.content_count ?? 6 },
+    { id: 'videos', label: 'Videos', count: creator.videoCount ?? 3 },
+    { id: 'photos', label: 'Photos', count: creator.photoCount ?? 3 },
+    { id: 'live', label: 'Live Streams', count: creator.liveCount ?? 0 }
+  ]
+
   // Fetch user's subscription status for this creator
   useEffect(() => {
     const fetchUserSubscriptions = async () => {
-      if (!user) {
+      if (!user || !creator?.id) {
         setLoadingSubscriptions(false)
         return
       }
@@ -79,13 +108,13 @@ export default function CreatorProfile({ creator }) {
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                    {creator.name}
+                    {displayName}
                   </h1>
                   <p className="text-lg text-gray-600 mb-4">
-                    {creator.category}
+                    {category}
                   </p>
                   <p className="text-gray-700 max-w-2xl">
-                    {creator.bio}
+                    {bio}
                   </p>
                 </div>
               </div>
@@ -94,22 +123,22 @@ export default function CreatorProfile({ creator }) {
               <div className="flex items-center space-x-8 text-sm text-gray-600">
                 <div className="flex items-center">
                   <Users className="h-5 w-5 mr-2" />
-                  <span className="font-medium">{creator.subscribers}</span>
+                  <span className="font-medium">{stats.subscribers}</span>
                   <span className="ml-1">subscribers</span>
                 </div>
                 <div className="flex items-center">
                   <Star className="h-5 w-5 text-yellow-400 mr-2" />
-                  <span className="font-medium">{creator.rating}</span>
+                  <span className="font-medium">{stats.rating}</span>
                   <span className="ml-1">rating</span>
                 </div>
                 <div className="flex items-center">
                   <Heart className="h-5 w-5 text-red-400 mr-2" />
-                  <span className="font-medium">{creator.likes}</span>
+                  <span className="font-medium">{stats.likes}</span>
                   <span className="ml-1">likes</span>
                 </div>
                 <div className="flex items-center">
                   <Calendar className="h-5 w-5 mr-2" />
-                  <span>Joined {creator.joinDate}</span>
+                  <span>Joined {stats.joinDate}</span>
                 </div>
               </div>
             </div>
@@ -117,12 +146,7 @@ export default function CreatorProfile({ creator }) {
             {/* Content Tabs */}
             <div className="border-b border-gray-200 mb-6">
               <nav className="-mb-px flex space-x-8">
-                {[
-                  { id: 'posts', label: 'Posts', count: creator.postCount },
-                  { id: 'videos', label: 'Videos', count: creator.videoCount },
-                  { id: 'photos', label: 'Photos', count: creator.photoCount },
-                  { id: 'live', label: 'Live Streams', count: creator.liveCount }
-                ].map((tab) => (
+                {tabConfig.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
@@ -143,13 +167,15 @@ export default function CreatorProfile({ creator }) {
 
             {/* Content Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[1, 2, 3, 4, 5, 6].map((item) => (
-                <div key={item} className="card group cursor-pointer">
-                  <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 relative overflow-hidden">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      {activeTab === 'videos' ? (
-                        <Play className="h-12 w-12 text-gray-400 group-hover:text-primary-600 transition-colors" />
-                      ) : (
+              {[1, 2, 3, 4, 5, 6].map((item) => {
+                const meta = PLACEHOLDER_CONTENT[(item - 1) % PLACEHOLDER_CONTENT.length]
+                return (
+                  <div key={item} className="card group cursor-pointer">
+                    <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 relative overflow-hidden">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        {activeTab === 'videos' ? (
+                          <Play className="h-12 w-12 text-gray-400 group-hover:text-primary-600 transition-colors" />
+                        ) : (
                         <ImageIcon className="h-12 w-12 text-gray-400 group-hover:text-primary-600 transition-colors" />
                       )}
                     </div>
@@ -157,7 +183,7 @@ export default function CreatorProfile({ creator }) {
                     {/* Price Badge */}
                     <div className="absolute top-3 right-3">
                       <span className="bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
-                        ${(Math.random() * 20 + 5).toFixed(2)}
+                        ${meta.price}
                       </span>
                     </div>
 
@@ -175,21 +201,22 @@ export default function CreatorProfile({ creator }) {
                       Exclusive Content #{item}
                     </h3>
                     <div className="flex items-center justify-between text-sm text-gray-600">
-                      <span>2 days ago</span>
+                      <span>{meta.publishedAgo}</span>
                       <div className="flex items-center space-x-3">
                         <span className="flex items-center">
                           <Heart className="h-4 w-4 mr-1" />
-                          {Math.floor(Math.random() * 500 + 100)}
+                          {meta.likes}
                         </span>
                         <span className="flex items-center">
                           <MessageCircle className="h-4 w-4 mr-1" />
-                          {Math.floor(Math.random() * 50 + 10)}
+                          {meta.comments}
                         </span>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                  </div>
+                )
+              })}
             </div>
 
             {/* Load More */}
@@ -244,7 +271,7 @@ export default function CreatorProfile({ creator }) {
             {/* Message Creator */}
             <div className="card p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Message {creator.name}
+                Message {displayName}
               </h3>
               <button className="w-full btn-secondary flex items-center justify-center">
                 <MessageCircle className="h-4 w-4 mr-2" />
@@ -261,15 +288,15 @@ export default function CreatorProfile({ creator }) {
                 Similar Creators
               </h3>
               <div className="space-y-3">
-                {[1, 2, 3].map((item) => (
-                  <div key={item} className="flex items-center space-x-3">
+                {PLACEHOLDER_SIMILAR_CREATORS.map((item) => (
+                  <div key={item.name} className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-pink-400 rounded-full flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">
-                        Creator Name {item}
+                        {item.name}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {Math.floor(Math.random() * 50 + 10)}k subscribers
+                        {item.subscribers}
                       </p>
                     </div>
                     <button className="text-sm text-primary-600 hover:text-primary-700">
@@ -280,6 +307,34 @@ export default function CreatorProfile({ creator }) {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function CreatorProfileSkeleton() {
+  return (
+    <div className="max-w-7xl mx-auto animate-pulse">
+      <div className="h-64 bg-gray-200 rounded-3xl mb-8" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-3">
+            <div className="h-8 w-1/3 bg-gray-200 rounded" />
+            <div className="h-4 w-1/2 bg-gray-200 rounded" />
+            <div className="h-4 w-full bg-gray-200 rounded" />
+          </div>
+          <div className="h-10 bg-gray-200 rounded" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[1, 2, 3, 4].map((item) => (
+              <div key={item} className="h-48 bg-gray-200 rounded-2xl" />
+            ))}
+          </div>
+        </div>
+        <div className="space-y-6">
+          {[1, 2, 3].map((item) => (
+            <div key={item} className="h-48 bg-gray-200 rounded-2xl" />
+          ))}
         </div>
       </div>
     </div>

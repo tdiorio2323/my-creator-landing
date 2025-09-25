@@ -35,6 +35,13 @@ import {
 const CreatorFeaturesDemo = () => {
   const [activeFeature, setActiveFeature] = useState('overview')
 
+  const HERO_SPARKLES = Array.from({ length: 15 }).map((_, index) => ({
+    left: `${(index * 17) % 100}%`,
+    top: `${(index * 23) % 100}%`,
+    delay: `${(index % 4) * 0.45}s`,
+    duration: `${2 + (index % 3) * 0.7}s`
+  }))
+
   const features = {
     overview: {
       title: 'Creator Dashboard Overview',
@@ -189,15 +196,15 @@ const CreatorFeaturesDemo = () => {
 
           {/* Animated background elements */}
           <div className="absolute inset-0">
-            {[...Array(15)].map((_, i) => (
+            {HERO_SPARKLES.map((sparkle, i) => (
               <div
                 key={i}
                 className="absolute w-2 h-2 bg-white/10 rounded-full animate-pulse"
                 style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                  animationDelay: `${Math.random() * 3}s`,
-                  animationDuration: `${2 + Math.random() * 2}s`
+                  left: sparkle.left,
+                  top: sparkle.top,
+                  animationDelay: sparkle.delay,
+                  animationDuration: sparkle.duration
                 }}
               />
             ))}
