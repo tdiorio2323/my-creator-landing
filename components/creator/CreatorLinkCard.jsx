@@ -1,6 +1,13 @@
 import React, { useState } from 'react'
 import { ExternalLink, Users, Verified, Eye, Star, TrendingUp, Mail, Copy, Check } from 'lucide-react'
 
+const SPARKLE_POINTS = Array.from({ length: 20 }).map((_, index) => ({
+  left: `${(index * 13) % 100}%`,
+  top: `${(index * 29) % 100}%`,
+  delay: `${(index % 5) * 0.4}s`,
+  duration: `${2 + (index % 4) * 0.5}s`
+}))
+
 const CreatorLinkCard = ({ profileData }) => {
   const [copiedText, setCopiedText] = useState('')
 
@@ -70,15 +77,15 @@ const CreatorLinkCard = ({ profileData }) => {
 
       {/* Floating particles effect */}
       <div className="absolute inset-0">
-        {[...Array(20)].map((_, i) => (
+        {SPARKLE_POINTS.map((point, i) => (
           <div
             key={i}
             className="absolute w-1 h-1 bg-white/20 rounded-full animate-pulse"
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${2 + Math.random() * 2}s`
+              left: point.left,
+              top: point.top,
+              animationDelay: point.delay,
+              animationDuration: point.duration
             }}
           />
         ))}

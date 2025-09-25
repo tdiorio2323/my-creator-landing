@@ -40,7 +40,7 @@ export default function UploadCenter() {
   const handleFiles = (fileList) => {
     const newFiles = Array.from(fileList).map(file => ({
       file,
-      id: Math.random().toString(36).substr(2, 9),
+      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${file.name}`,
       preview: URL.createObjectURL(file),
       name: file.name,
       size: (file.size / 1024 / 1024).toFixed(2) + ' MB'

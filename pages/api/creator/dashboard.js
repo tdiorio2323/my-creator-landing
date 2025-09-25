@@ -127,13 +127,13 @@ export default async function handler(req, res) {
         contentCount: content.length,
         averageRating: 4.8 // TODO: Calculate from reviews
       },
-      recentContent: content.slice(0, 5).map(item => ({
+      recentContent: content.slice(0, 5).map((item, index) => ({
         id: item.id,
         title: item.title,
         type: item.contentType.toLowerCase(),
         views: item.viewCount,
         likes: item.likeCount,
-        revenue: Math.random() * 200 + 50, // Mock revenue calculation
+        revenue: 150 + index * 75,
         publishedAt: item.createdAt
       })),
       topSubscribers: subscriptions.slice(0, 5).map(sub => ({
