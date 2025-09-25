@@ -1,12 +1,14 @@
 import Link from 'next/link'
-import { Search, User, Bell, Menu, LogOut, Crown, Sparkles } from 'lucide-react'
+import { Search, Bell, Menu, LogOut, Crown, Sparkles } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
 export default function Header() {
   const { user, signOut, loading } = useAuth()
 
   const handleSignOut = async () => {
-    await signOut()
+    if (signOut) {
+      await signOut()
+    }
   }
 
   return (
@@ -45,10 +47,8 @@ export default function Header() {
             <Link href="/legal" className="nav-link">
               Legal
             </Link>
-            <div className="w-px h-6 bg-luxury-300 mx-4" />
-            <Link href="/premium" className="nav-link text-primary-600 font-semibold">
-              <Crown className="w-4 h-4 mr-1 inline" />
-              Premium
+            <Link href="/dashboard" className="nav-link">
+              Dashboard
             </Link>
           </nav>
 
@@ -74,10 +74,12 @@ export default function Header() {
 
           {/* Premium User Actions */}
           <div className="flex items-center space-x-3">
-            {user ? (
+            {loading ? (
+              <div className="hidden lg:block w-28 h-10 rounded-xl bg-white/40 animate-pulse" aria-hidden="true" />
+            ) : user ? (
               <>
                 {/* Premium Notifications */}
-                <button className="btn-icon relative group">
+                <button className="btn-icon relative group" aria-label="Notifications">
                   <Bell className="h-5 w-5 text-luxury-600 group-hover:text-primary-600 transition-colors" />
                   <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center">
                     <span className="text-white text-xs font-bold">3</span>
@@ -95,7 +97,7 @@ export default function Header() {
                     </div>
                     <div className="hidden xl:block">
                       <p className="text-sm font-semibold text-luxury-900 group-hover:text-primary-600 transition-colors">
-                        {user.user_metadata?.full_name || 'Premium User'}
+                        {user.user_metadata?.full_name || user.email || 'Premium User'}
                       </p>
                       <p className="text-xs text-luxury-500">Elite Creator</p>
                     </div>
@@ -107,6 +109,7 @@ export default function Header() {
                   onClick={handleSignOut}
                   className="btn-icon group"
                   title="Sign Out"
+                  aria-label="Sign out"
                 >
                   <LogOut className="h-5 w-5 text-luxury-600 group-hover:text-red-600 transition-colors" />
                 </button>
@@ -125,7 +128,7 @@ export default function Header() {
             )}
 
             {/* Premium Mobile Menu */}
-            <button className="lg:hidden btn-icon">
+            <button className="lg:hidden btn-icon" aria-label="Toggle navigation">
               <Menu className="h-5 w-5 text-luxury-600" />
             </button>
           </div>

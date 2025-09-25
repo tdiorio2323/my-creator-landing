@@ -1,18 +1,14 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { 
-  Home, 
-  Compass, 
-  Heart, 
-  Bookmark, 
-  Wallet, 
-  Settings, 
-  Bell,
+import {
+  Home,
+  Compass,
+  Users,
   Upload,
   BarChart3,
   MessageSquare,
-  Users,
-  Video
+  Video,
+  DollarSign
 } from 'lucide-react'
 
 export default function Sidebar({ userType = 'subscriber' }) {
@@ -21,21 +17,16 @@ export default function Sidebar({ userType = 'subscriber' }) {
   const subscriberLinks = [
     { href: '/dashboard', icon: Home, label: 'Home Feed' },
     { href: '/explore', icon: Compass, label: 'Explore' },
-    { href: '/dashboard/subscriptions', icon: Heart, label: 'Subscriptions' },
-    { href: '/dashboard/bookmarks', icon: Bookmark, label: 'Bookmarks' },
-    { href: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
-    { href: '/dashboard/notifications', icon: Bell, label: 'Notifications' },
-    { href: '/dashboard/settings', icon: Settings, label: 'Settings' }
+    { href: '/categories', icon: Users, label: 'Categories' }
   ]
 
   const creatorLinks = [
     { href: '/creator-dashboard', icon: Home, label: 'Dashboard' },
     { href: '/creator-dashboard/upload', icon: Upload, label: 'Upload Content' },
+    { href: '/creator-dashboard/payments', icon: DollarSign, label: 'Payment Center' },
     { href: '/creator-dashboard/analytics', icon: BarChart3, label: 'Analytics' },
     { href: '/creator-dashboard/messages', icon: MessageSquare, label: 'Messages' },
-    { href: '/creator-dashboard/subscribers', icon: Users, label: 'Subscribers' },
-    { href: '/creator-dashboard/live', icon: Video, label: 'Go Live' },
-    { href: '/creator-dashboard/settings', icon: Settings, label: 'Settings' }
+    { href: '/creator-dashboard/live', icon: Video, label: 'Go Live' }
   ]
 
   const links = userType === 'creator' ? creatorLinks : subscriberLinks
