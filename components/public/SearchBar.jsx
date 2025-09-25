@@ -7,7 +7,9 @@ export default function SearchBar({ onSearch, onFilter }) {
 
   const handleSearch = (e) => {
     e.preventDefault()
-    onSearch(searchTerm)
+    if (onSearch) {
+      onSearch(searchTerm)
+    }
   }
 
   return (
@@ -15,18 +17,34 @@ export default function SearchBar({ onSearch, onFilter }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex items-center space-x-4">
           {/* Search Input */}
-          <form onSubmit={handleSearch} className="flex-1 max-w-2xl">
+          <form
+            role="search"
+            aria-label="Global creator search"
+            onSubmit={handleSearch}
+            className="flex-1 max-w-2xl"
+          >
             <div className="relative">
+              <label htmlFor="global-search" className="sr-only">
+                Search creators, categories, or content
+              </label>
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-5 w-5 text-gray-400" />
               </div>
               <input
-                type="text"
+                id="global-search"
+                type="search"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search creators, categories, or content..."
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg text-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                placeholder="Search creators, categories, or content"
+                className="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg text-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
+              <button
+                type="submit"
+                className="btn-icon absolute top-1/2 -translate-y-1/2 right-2"
+                aria-label="Submit search"
+              >
+                <Search className="h-5 w-5" />
+              </button>
             </div>
           </form>
 

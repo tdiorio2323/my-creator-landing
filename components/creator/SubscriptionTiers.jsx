@@ -307,7 +307,11 @@ export default function SubscriptionTiers({ isCreator = false, creatorTiers = []
                         <Edit className="h-4 w-4 group-hover:scale-110 transition-transform" />
                         <span>Edit Tier</span>
                       </button>
-                      <button className="btn-icon text-red-600 hover:text-red-700 group">
+                      <button
+                        className="btn-icon text-red-600 hover:text-red-700 group"
+                        type="button"
+                        aria-label="Delete tier"
+                      >
                         <Trash2 className="h-5 w-5 group-hover:scale-110 transition-transform" />
                       </button>
                     </div>
