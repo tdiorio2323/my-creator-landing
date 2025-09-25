@@ -2,10 +2,9 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { Play, Heart, MessageCircle, Share, Lock, Eye, Clock } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
-// Removed direct import of access functions - using API routes instead
 
 export default function ContentCard({ content, showStats = false }) {
-  const { user } = useAuth()
+  const { user, session } = useAuth()
   const [liked, setLiked] = useState(false)
   const [hasAccess, setHasAccess] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -41,10 +40,11 @@ export default function ContentCard({ content, showStats = false }) {
 
     try {
       // Check if user has access via API
+      const headers = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {}
       const response = await fetch(`/api/user/${user.id}/subscription/${content.creator_id}`, {
-        headers: {
-          'Authorization': `Bearer ${user.accessToken || ''}`,
-        }
+        headers
       })
       const data = await response.json()
       const access = data.hasAccess || false
