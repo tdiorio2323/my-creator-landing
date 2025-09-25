@@ -30,6 +30,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "postinstall": "npx playwright install --with-deps || true",
     "lighthouse:install": "npx -y @puppeteer/browsers install chrome",
     "lighthouse:run": "node -e \"require('fs').mkdirSync('.artifacts',{recursive:true})\" && lighthouse http://localhost:3000 --only-categories=performance --preset=desktop --throttling-method=provided --max-wait-for-load=60000 --output=json --output-path=.artifacts/lhr",
     "lighthouse:score": "node scripts/print-lhr-score.cjs",
@@ -37,6 +40,7 @@
     "prisma:seed": "node prisma/seed.js"
   },
   "devDependencies": {
+    "@playwright/test": "^1.47.0",
     "eslint": "^8.56.0",
     "eslint-config-next": "^14.1.0",
     "tailwindcss": "3.4.13"
