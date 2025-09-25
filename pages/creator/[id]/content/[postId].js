@@ -4,13 +4,37 @@ import Head from 'next/head'
 import Image from 'next/image'
 import Header from '../../../../components/layout/Header'
 import { useAuth } from '../../../../contexts/AuthContext'
-// Removed direct import of access functions - using API routes instead
+import { supabase } from '../../../../lib/supabaseClient'
 import { Heart, Share, MessageCircle, Lock, Play, ArrowLeft } from 'lucide-react'
+
+function buildPlaceholderContent(postId, creatorId) {
+  return {
+    id: postId,
+    creator_id: creatorId,
+    title: 'Premium Content',
+    description: 'Exclusive content will appear here soon.',
+    content_type: 'video',
+    is_free: false,
+    required_tier: 'premium',
+    view_count: 0,
+    like_count: 0
+  }
+}
+
+function buildPlaceholderCreator(creatorId) {
+  return {
+    id: creatorId,
+    display_name: 'Featured Creator',
+    profiles: {
+      full_name: 'Featured Creator'
+    }
+  }
+}
 
 export default function ContentPage() {
   const router = useRouter()
   const { id: creatorId, postId } = router.query
-  const { user } = useAuth()
+  const { user, session } = useAuth()
   
   const [content, setContent] = useState(null)
   const [creator, setCreator] = useState(null)
@@ -22,8 +46,17 @@ export default function ContentPage() {
     if (!postId || !creatorId) return
 
     const fetchContent = async () => {
+      setLoading(true)
+      setError(null)
+      if (!supabase) {
+        setContent(buildPlaceholderContent(postId, creatorId))
+        setCreator(buildPlaceholderCreator(creatorId))
+        setHasAccess(false)
+        setLoading(false)
+        return
+      }
+
       try {
-        // Fetch content details
         const { data: contentData, error: contentError } = await supabase
           .from('content')
           .select(`
@@ -41,34 +74,36 @@ export default function ContentPage() {
           .eq('creator_id', creatorId)
           .single()
 
-        if (contentError) {
+        if (contentError || !contentData) {
           console.error('Content fetch error:', contentError)
           setError('Content not found')
+          setContent(buildPlaceholderContent(postId, creatorId))
+          setCreator(buildPlaceholderCreator(creatorId))
+          setLoading(false)
           return
         }
 
         setContent(contentData)
         setCreator(contentData.creators)
 
-        // Check access if user is logged in
         if (user) {
           try {
+            const headers = session?.access_token
+              ? { Authorization: `Bearer ${session.access_token}` }
+              : {}
             const accessRes = await fetch(`/api/content/${postId}/access`, {
-              headers: {
-                'Authorization': `Bearer ${user.accessToken || ''}`,
-              }
+              headers
             })
             const accessData = await accessRes.json()
             const access = accessData.hasAccess || false
             setHasAccess(access)
 
-            // Track view if user has access
             if (access || contentData.is_free) {
               fetch(`/api/content/${postId}/track-view`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${user.accessToken || ''}`,
+                  ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {})
                 },
                 body: JSON.stringify({ userId: user.id })
               }).catch(err => console.error('Failed to track view:', err))
@@ -79,17 +114,21 @@ export default function ContentPage() {
           }
         } else if (contentData.is_free) {
           setHasAccess(true)
+        } else {
+          setHasAccess(false)
         }
       } catch (err) {
         console.error('Error fetching content:', err)
         setError('Failed to load content')
+        setContent(buildPlaceholderContent(postId, creatorId))
+        setCreator(buildPlaceholderCreator(creatorId))
       } finally {
         setLoading(false)
       }
     }
 
     fetchContent()
-  }, [postId, creatorId, user])
+  }, [postId, creatorId, user, session])
 
   const handleSubscribe = () => {
     router.push(`/creator/${creatorId}`)
@@ -144,11 +183,13 @@ export default function ContentPage() {
   return (
     <>
       <Head>
-        <title>{content.title} - {creator.display_name} - CreatorHub</title>
-        <meta name="description" content={content.description} />
+        <title>{content.title} - {(creator?.display_name) || 'Creator'} - CreatorHub</title>
+        <meta name="description" content={content.description || 'Exclusive creator content'} />
         <meta property="og:title" content={content.title} />
-        <meta property="og:description" content={content.description} />
-        <meta property="og:image" content={content.thumbnail_url} />
+        <meta property="og:description" content={content.description || 'Exclusive creator content'} />
+        {content.thumbnail_url && (
+          <meta property="og:image" content={content.thumbnail_url} />
+        )}
       </Head>
 
       <Header />
@@ -161,7 +202,7 @@ export default function ContentPage() {
             className="flex items-center text-gray-600 hover:text-gray-900 mb-6"
           >
             <ArrowLeft className="h-5 w-5 mr-2" />
-            Back to {creator.display_name}
+            Back to {creator?.display_name || 'Creator'}
           </button>
 
           {/* Content */}
@@ -203,7 +244,7 @@ export default function ContentPage() {
                     <Lock className="h-16 w-16 mx-auto mb-4 text-gray-400" />
                     <h3 className="text-xl font-semibold mb-2">Premium Content</h3>
                     <p className="text-gray-300 mb-6">
-                      Subscribe to {creator.display_name} to access this exclusive content
+                      Subscribe to {creator?.display_name || 'this creator'} to access this exclusive content
                     </p>
                     <button
                       onClick={handleSubscribe}

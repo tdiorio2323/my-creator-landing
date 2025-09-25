@@ -2,7 +2,32 @@ import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import Header from '../../components/layout/Header'
-import CreatorProfile from '../../components/creator/CreatorProfile'
+import CreatorProfile, { CreatorProfileSkeleton } from '../../components/creator/CreatorProfile'
+import { supabase } from '../../lib/supabaseClient'
+
+function buildPlaceholderCreator(id) {
+  return {
+    id,
+    name: 'Featured Creator',
+    display_name: 'Featured Creator',
+    category: 'Lifestyle',
+    bio: 'Creator details will appear here soon.',
+    subscribers: 0,
+    rating: 0,
+    likes: 0,
+    joinDate: '2024',
+    postCount: 6,
+    videoCount: 3,
+    photoCount: 3,
+    liveCount: 0,
+    content_count: 6,
+    profile: {
+      full_name: 'Featured Creator',
+      bio: 'Creator details will appear here soon.'
+    },
+    subscription_tiers: []
+  }
+}
 
 export default function CreatorPage() {
   const router = useRouter()
@@ -15,8 +40,15 @@ export default function CreatorPage() {
     if (!id) return
 
     const fetchCreator = async () => {
+      setLoading(true)
+      setError(null)
+      if (!supabase) {
+        setCreator(buildPlaceholderCreator(id))
+        setLoading(false)
+        return
+      }
+
       try {
-        // Fetch creator with their profile and subscription tiers
         const { data: creatorData, error: creatorError } = await supabase
           .from('creators')
           .select(`
@@ -33,13 +65,14 @@ export default function CreatorPage() {
           .eq('id', id)
           .single()
 
-        if (creatorError) {
+        if (creatorError || !creatorData) {
           console.error('Creator fetch error:', creatorError)
           setError('Creator not found')
+          setCreator(buildPlaceholderCreator(id))
+          setLoading(false)
           return
         }
 
-        // Fetch creator's content count
         const { count: contentCount } = await supabase
           .from('content')
           .select('*', { count: 'exact', head: true })
@@ -49,11 +82,12 @@ export default function CreatorPage() {
         setCreator({
           ...creatorData,
           profile: creatorData.profiles,
-          content_count: contentCount || 0
+          content_count: contentCount || creatorData.content_count || 0
         })
       } catch (err) {
         console.error('Error fetching creator:', err)
         setError('Failed to load creator')
+        setCreator(buildPlaceholderCreator(id))
       } finally {
         setLoading(false)
       }
@@ -66,10 +100,9 @@ export default function CreatorPage() {
     return (
       <>
         <Header />
-        <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading creator profile...</p>
+        <main className="min-h-screen bg-gray-50">
+          <div className="section-container py-16">
+            <CreatorProfileSkeleton />
           </div>
         </main>
       </>
@@ -99,10 +132,13 @@ export default function CreatorPage() {
   return (
     <>
       <Head>
-        <title>{creator.profile?.full_name || creator.display_name} - CreatorHub</title>
-        <meta name="description" content={`Subscribe to ${creator.profile?.full_name || creator.display_name} for exclusive ${creator.category} content.`} />
-        <meta property="og:title" content={`${creator.profile?.full_name || creator.display_name} - CreatorHub`} />
-        <meta property="og:description" content={creator.profile?.bio || creator.description} />
+        <title>{creator.profile?.full_name || creator.name || creator.display_name} - CreatorHub</title>
+        <meta
+          name="description"
+          content={`Subscribe to ${creator.profile?.full_name || creator.name || creator.display_name} for exclusive ${creator.category || 'premium'} content.`}
+        />
+        <meta property="og:title" content={`${creator.profile?.full_name || creator.name || creator.display_name} - CreatorHub`} />
+        <meta property="og:description" content={creator.profile?.bio || creator.bio || creator.description} />
         <meta property="og:type" content="profile" />
       </Head>
 
