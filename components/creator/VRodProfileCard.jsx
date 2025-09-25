@@ -1,4 +1,5 @@
 import React from 'react'
+import Image from 'next/image'
 import { ExternalLink, Users, Verified, Eye } from 'lucide-react'
 
 const VRodProfileCard = () => {
@@ -52,10 +53,13 @@ const VRodProfileCard = () => {
         {/* Header */}
         <div className="text-center p-8 space-y-6">
           <div className="flex items-center justify-center">
-            <img
+            <Image
               src={profileData.avatar}
               alt={profileData.title}
+              width={112}
+              height={112}
               className="h-28 w-28 rounded-full border-4 border-white/30 shadow-xl object-cover"
+              priority
             />
           </div>
 

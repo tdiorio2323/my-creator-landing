@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import Image from 'next/image'
 import { ExternalLink, Users, Verified, Eye, Star, TrendingUp, Mail, Copy, Check } from 'lucide-react'
 
 const SPARKLE_POINTS = Array.from({ length: 20 }).map((_, index) => ({
@@ -96,10 +97,13 @@ const CreatorLinkCard = ({ profileData }) => {
         {/* Header */}
         <div className="text-center p-8 space-y-6">
           <div className="relative flex items-center justify-center">
-            <img
+            <Image
               src={profileData.avatar}
               alt={profileData.title}
+              width={128}
+              height={128}
               className="h-32 w-32 rounded-full border-4 border-white/30 shadow-2xl object-cover ring-4 ring-purple-500/20"
+              priority
             />
             {profileData.verified && (
               <div className="absolute -bottom-2 -right-2 bg-blue-500 rounded-full p-2">
