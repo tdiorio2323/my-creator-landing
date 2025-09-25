@@ -1,8 +1,8 @@
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
-import Head from 'next/head'
 import Header from '../../components/layout/Header'
 import CreatorProfile, { CreatorProfileSkeleton } from '../../components/creator/CreatorProfile'
+import SeoHead from '../../components/SeoHead'
 import { supabase } from '../../lib/supabaseClient'
 
 function buildPlaceholderCreator(id) {
@@ -99,6 +99,7 @@ export default function CreatorPage() {
   if (loading) {
     return (
       <>
+        <SeoHead title="Loading creator" description="Fetching creator details." />
         <Header />
         <main className="min-h-screen bg-gray-50">
           <div className="section-container py-16">
@@ -112,12 +113,13 @@ export default function CreatorPage() {
   if (error || !creator) {
     return (
       <>
+        <SeoHead title="Creator not found" description="The creator you are looking for could not be found." />
         <Header />
         <main className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Creator Not Found</h1>
             <p className="text-gray-600 mb-4">{error || 'This creator profile does not exist.'}</p>
-            <button 
+            <button
               onClick={() => router.push('/explore')}
               className="btn-primary"
             >
@@ -131,16 +133,24 @@ export default function CreatorPage() {
 
   return (
     <>
-      <Head>
-        <title>{creator.profile?.full_name || creator.name || creator.display_name} - CreatorHub</title>
-        <meta
-          name="description"
-          content={`Subscribe to ${creator.profile?.full_name || creator.name || creator.display_name} for exclusive ${creator.category || 'premium'} content.`}
+      <SeoHead
+        title={creator.profile?.full_name || creator.name || creator.display_name}
+        description={`Subscribe to ${creator.profile?.full_name || creator.name || creator.display_name} for exclusive ${creator.category || 'premium'} content.`}
+        canonical={id ? `https://yourdomain.com/creator/${id}` : undefined}
+      />
+      {id && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Person',
+              name: creator.profile?.full_name || creator.name || creator.display_name,
+              url: `https://yourdomain.com/creator/${id}`
+            })
+          }}
         />
-        <meta property="og:title" content={`${creator.profile?.full_name || creator.name || creator.display_name} - CreatorHub`} />
-        <meta property="og:description" content={creator.profile?.bio || creator.bio || creator.description} />
-        <meta property="og:type" content="profile" />
-      </Head>
+      )}
 
       <Header />
       

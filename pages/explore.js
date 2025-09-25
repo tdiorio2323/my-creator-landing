@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import Head from 'next/head'
 import Header from '../components/layout/Header'
 import SearchBar from '../components/public/SearchBar'
 import CreatorCard from '../components/creator/CreatorCard'
+import SeoHead from '../components/SeoHead'
 import { Grid, List, TrendingUp, Clock, Star } from 'lucide-react'
 
 // Mock data - in real app this would come from API
@@ -94,10 +94,11 @@ export default function Explore() {
 
   return (
     <>
-      <Head>
-        <title>Explore Creators - CreatorHub</title>
-        <meta name="description" content="Discover amazing creators and exclusive content across all categories." />
-      </Head>
+      <SeoHead
+        title="Explore creators"
+        description="Discover amazing creators and exclusive content across all categories."
+        canonical="https://yourdomain.com/explore"
+      />
 
       <Header />
       
